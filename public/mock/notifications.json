@@ -1,0 +1,37 @@
+[
+  {
+    "id": "NT-101",
+    "timestamp": "11:24:18 AM",
+    "type": "CRITICAL",
+    "message": "[AI THREAT CORE] Weapon confidence 95.2% detected at North Subway Entrance 4B",
+    "cameraId": "CAM-01"
+  },
+  {
+    "id": "NT-102",
+    "timestamp": "11:24:05 AM",
+    "type": "DISPATCH",
+    "message": "[COMMAND OPS] Unit 402 dispatched to Sector 7G Entrance. ETA 1.5 mins.",
+    "cameraId": "CAM-01"
+  },
+  {
+    "id": "NT-103",
+    "timestamp": "11:22:40 AM",
+    "type": "INFO",
+    "message": "[SYSTEM] Central Neural Processing Load steady at 34.2%. Streams 12/12 online.",
+    "cameraId": "CAM-03"
+  },
+  {
+    "id": "NT-104",
+    "timestamp": "11:15:10 AM",
+    "type": "ALERT",
+    "message": "[FACIAL RECOG] Match confirmed for Person of Interest #4928 near Station Platform A",
+    "cameraId": "CAM-06"
+  },
+  {
+    "id": "NT-105",
+    "timestamp": "11:10:02 AM",
+    "type": "WARNING",
+    "message": "[ANOMALY] Unattended object stationary >18m at South Parking Lot P2",
+    "cameraId": "CAM-04"
+  }
+]
