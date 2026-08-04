@@ -1,7 +1,6 @@
-import { CameraData, Incident, PatrolUnit, NotificationItem, TimelineEvent, AlertItem } from '../types';
-import { safeFetch, APIError, getUserFriendlyError } from '../utils/errorHandling';
+import { CameraData, Incident, PatrolUnit, EvidenceItem } from '../types';
+import { safeFetch, getUserFriendlyError } from '../utils/errorHandling';
 
-// API interface for camera management
 interface BackendCamera {
   camera_id: string;
   camera_name: string;
@@ -18,7 +17,124 @@ interface BackendCamera {
   created_at: string;
 }
 
-// Authentication token management
+const defaultCamerasList: CameraData[] = [
+  {
+    id: 'CAM-01',
+    name: 'North Subway Entrance 4B',
+    location: 'Sector 7G - New York, NY',
+    status: 'REC',
+    fps: '30.0 FPS',
+    resolution: '1080p FHD',
+    aiStatus: 'HIGH THREAT DETECTED',
+    aiStatusType: 'warning',
+    severity: 7.4,
+    lat: 40.7128,
+    lng: -74.006,
+    videoUrl: '/assets/videos/accident/accident_001.mp4',
+    detections: [],
+    aiMetrics: { weapon: true, weaponConfidence: 88, fight: true, fightConfidence: 91, people: 4, blood: false, severity: 7.4, trackingIDs: [101, 102] },
+  },
+  {
+    id: 'CAM-02',
+    name: 'Mall Atrium East Gate',
+    location: 'Sector 3A - New York, NY',
+    status: 'REC',
+    fps: '30.0 FPS',
+    resolution: '1080p FHD',
+    aiStatus: 'MONITORING',
+    aiStatusType: 'info',
+    severity: 5.0,
+    lat: 40.716,
+    lng: -74.001,
+    videoUrl: '/assets/videos/crowd/crowded_001.mp4',
+    detections: [],
+    aiMetrics: { weapon: false, weaponConfidence: 0, fight: false, fightConfidence: 0, people: 12, blood: false, severity: 5.0, trackingIDs: [201, 202] },
+  },
+  {
+    id: 'CAM-03',
+    name: 'Highway Interchange Sector 12',
+    location: 'Sector 12 - New York, NY',
+    status: 'REC',
+    fps: '30.0 FPS',
+    resolution: '1080p FHD',
+    aiStatus: 'NORMAL',
+    aiStatusType: 'success',
+    severity: 3.0,
+    lat: 40.722,
+    lng: -74.001,
+    videoUrl: '/assets/videos/fire/fire_001.mp4',
+    detections: [],
+    aiMetrics: { weapon: false, weaponConfidence: 0, fight: false, fightConfidence: 0, people: 2, blood: false, severity: 3.0, trackingIDs: [] },
+  },
+  {
+    id: 'CAM-04',
+    name: 'Parking Structure P3 Level 2',
+    location: 'Sector 5B - New York, NY',
+    status: 'REC',
+    fps: '30.0 FPS',
+    resolution: '1080p FHD',
+    aiStatus: 'CRITICAL AI ALERT',
+    aiStatusType: 'danger',
+    severity: 9.2,
+    lat: 40.718,
+    lng: -73.998,
+    videoUrl: '/assets/videos/weapon/weapon_001.mp4',
+    detections: [],
+    aiMetrics: { weapon: true, weaponConfidence: 96, fight: true, fightConfidence: 89, people: 3, blood: false, severity: 9.2, trackingIDs: [301] },
+  },
+];
+
+function transformBackendToCamera(backend: BackendCamera): CameraData {
+  const riskLevel = backend.risk_level;
+  let aiStatus = 'AI_ACTIVE';
+  let aiStatusType: 'danger' | 'warning' | 'info' | 'success' = 'success';
+  let severity = 1.0;
+
+  if (riskLevel === 'CRITICAL') {
+    aiStatus = 'CRITICAL AI ALERT';
+    aiStatusType = 'danger';
+    severity = 9.0;
+  } else if (riskLevel === 'HIGH') {
+    aiStatus = 'HIGH THREAT DETECTED';
+    aiStatusType = 'warning';
+    severity = 7.0;
+  } else if (riskLevel === 'MEDIUM') {
+    aiStatus = 'MONITORING';
+    aiStatusType = 'info';
+    severity = 5.0;
+  } else {
+    aiStatus = 'NORMAL';
+    aiStatusType = 'success';
+    severity = 3.0;
+  }
+
+  return {
+    id: backend.camera_id,
+    name: backend.camera_name,
+    location: `${backend.zone} - ${backend.city}, ${backend.state}`,
+    status: backend.status === 'ONLINE' ? 'REC' : 'OFFLINE',
+    fps: '30.0 FPS',
+    resolution: '1080p FHD',
+    aiStatus,
+    aiStatusType,
+    severity,
+    lat: backend.latitude,
+    lng: backend.longitude,
+    videoUrl: backend.video_source || '/assets/videos/accident/accident_001.mp4',
+    detections: [],
+    aiMetrics: {
+      weapon: false,
+      weaponConfidence: 0,
+      fight: false,
+      fightConfidence: 0,
+      people: 1,
+      blood: false,
+      severity,
+      trackingIDs: [],
+    },
+  };
+}
+
 class AuthService {
   private token: string | null = null;
   private user: any = null;
@@ -59,61 +175,8 @@ class AuthService {
 
 export const authService = new AuthService();
 
-// Transform backend camera to frontend CameraData
-function transformBackendToCamera(backend: BackendCamera): CameraData {
-  const riskLevel = backend.risk_level;
-  let aiStatus = "AI_ACTIVE";
-  let aiStatusType: "danger" | "warning" | "info" | "success" = "success";
-  let severity = 1.0;
-
-  // Map risk level to AI status
-  if (riskLevel === "CRITICAL") {
-    aiStatus = "CRITICAL AI ALERT";
-    aiStatusType = "danger";
-    severity = 9.0;
-  } else if (riskLevel === "HIGH") {
-    aiStatus = "HIGH THREAT DETECTED";
-    aiStatusType = "warning";
-    severity = 7.0;
-  } else if (riskLevel === "MEDIUM") {
-    aiStatus = "MONITORING";
-    aiStatusType = "info";
-    severity = 5.0;
-  } else {
-    aiStatus = "NORMAL";
-    aiStatusType = "success";
-    severity = 3.0;
-  }
-
-  return {
-    id: backend.camera_id,
-    name: backend.camera_name,
-    location: `${backend.zone} - ${backend.city}, ${backend.state}`,
-    status: backend.status === "ONLINE" ? "REC" : "OFFLINE",
-    fps: "30.0 FPS",
-    resolution: "1080p FHD",
-    aiStatus: aiStatus,
-    aiStatusType: aiStatusType,
-    severity: severity,
-    lat: backend.latitude,
-    lng: backend.longitude,
-    videoUrl: backend.video_source,
-    detections: [],
-    aiMetrics: {
-      weapon: false,
-      weaponConfidence: 0,
-      fight: false,
-      fightConfidence: 0,
-      people: 0,
-      blood: false,
-      severity: severity,
-      trackingIDs: []
-    }
-  };
-}
-
 class DataService {
-  private cameras: CameraData[] = [];
+  private cameras: CameraData[] = defaultCamerasList;
   private listeners: Array<() => void> = [];
   private isLoading = false;
 
@@ -123,27 +186,31 @@ class DataService {
 
   public async loadCameras() {
     if (this.isLoading) return;
-    
     this.isLoading = true;
+
     try {
       const response = await safeFetch('/api/cameras');
-      
-      if (response) {
+      if (response && response.ok) {
         const backendCameras: BackendCamera[] = await response.json();
-        this.cameras = backendCameras.map(transformBackendToCamera);
-        this.notifyListeners();
+        if (backendCameras && backendCameras.length > 0) {
+          this.cameras = backendCameras.map(transformBackendToCamera);
+          this.notifyListeners();
+        }
       }
     } catch (error) {
-      console.error('Error loading cameras:', error);
-      const userMessage = getUserFriendlyError(error instanceof Error ? error : new Error('Unknown error'));
-      console.error('User message:', userMessage);
+      console.warn('Backend API /api/cameras offline — using default cameras', error);
     } finally {
       this.isLoading = false;
     }
   }
 
-  public async refreshCameras() {
-    await this.loadCameras();
+  public addCamera(newCam: CameraData) {
+    this.cameras = [newCam, ...this.cameras];
+    this.notifyListeners();
+  }
+
+  public refreshCameras() {
+    this.loadCameras();
   }
 
   public getCameras(): CameraData[] {
@@ -151,12 +218,11 @@ class DataService {
   }
 
   public getCameraById(id: string): CameraData | undefined {
-    return this.cameras.find(c => c.id === id);
+    return this.cameras.find((c) => c.id === id);
   }
 
-  // Method to allow Python WebSocket or API mock injection
   public updateDetectionOverlay(cameraId: string, newOverlay: any, newMetrics?: any) {
-    const camIndex = this.cameras.findIndex(c => c.id === cameraId);
+    const camIndex = this.cameras.findIndex((c) => c.id === cameraId);
     if (camIndex !== -1) {
       this.cameras[camIndex].detections = newOverlay;
       if (newMetrics) {
@@ -169,19 +235,13 @@ class DataService {
   public subscribe(listener: () => void) {
     this.listeners.push(listener);
     return () => {
-      this.listeners = this.listeners.filter(l => l !== listener);
+      this.listeners = this.listeners.filter((l) => l !== listener);
     };
   }
 
   private notifyListeners() {
-    this.listeners.forEach(l => l());
+    this.listeners.forEach((l) => l());
   }
 }
 
 export const dataService = new DataService();
-
-// Global detectionOverlay for Python WebSocket bridge readiness
-(window as any).detectionOverlay = [];
-(window as any).updateSentinelDetections = (cameraId: string, overlay: any, metrics: any) => {
-  dataService.updateDetectionOverlay(cameraId, overlay, metrics);
-};
