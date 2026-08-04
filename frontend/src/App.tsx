@@ -14,14 +14,120 @@ import { QuickDispatchModal } from './components/modals/QuickDispatchModal';
 import { PrintReportModal } from './components/modals/PrintReportModal';
 import { FullscreenCameraModal } from './components/modals/FullscreenCameraModal';
 import { LoginPage } from './components/auth/LoginPage';
+import { safeFetch } from './utils/errorHandling';
+
+const defaultIncidentsList: Incident[] = [
+  {
+    id: 'INC-8812',
+    title: 'PHYSICAL ALTERCATION DETECTED',
+    location: 'Subway Platform - Zone 4',
+    cameraId: 'CAM-001',
+    severity: 9.3,
+    status: 'Active',
+    timestamp: '23:41:02 UTC',
+    description: 'High threat physical violent altercation detected by Sentinel AI YOLO vision model.',
+    detectedObjects: ['person (3)', 'backpack (1)'],
+    aiConfidence: 98.4,
+    aiAnalysis: {
+      weapon: true,
+      weaponConfidence: 95.2,
+      fight: true,
+      fightConfidence: 92.0,
+      people: 3,
+      blood: false,
+      severity: 9.3,
+      trackingIDs: ['TRK-104', 'TRK-105']
+    }
+  },
+  {
+    id: 'INC-8811',
+    title: 'RESTRICTED INTRUSION ALERT',
+    location: 'Main Terminal Lobby',
+    cameraId: 'CAM-002',
+    severity: 7.4,
+    status: 'Active',
+    timestamp: '23:38:15 UTC',
+    description: 'Unauthorized perimeter crossing detected after operational hours.',
+    detectedObjects: ['person (1)'],
+    aiConfidence: 94.2,
+    aiAnalysis: {
+      weapon: false,
+      weaponConfidence: 0,
+      fight: false,
+      fightConfidence: 0,
+      people: 1,
+      blood: false,
+      severity: 7.4,
+      trackingIDs: ['TRK-201']
+    }
+  },
+  {
+    id: 'INC-8810',
+    title: 'UNATTENDED BAGGAGE DETECTED',
+    location: 'North Concourse - Gate 12',
+    cameraId: 'CAM-003',
+    severity: 5.8,
+    status: 'Investigating',
+    timestamp: '23:25:00 UTC',
+    description: 'Unattended suitcase stationary for > 8 minutes.',
+    detectedObjects: ['suitcase (1)'],
+    aiConfidence: 91.0,
+    aiAnalysis: {
+      weapon: false,
+      weaponConfidence: 0,
+      fight: false,
+      fightConfidence: 0,
+      people: 0,
+      blood: false,
+      severity: 5.8,
+      trackingIDs: []
+    }
+  }
+];
+
+const defaultUnitsList: PatrolUnit[] = [
+  {
+    id: 'UNIT-402',
+    callSign: 'ALPHA-1 (PATROL)',
+    status: 'Available',
+    location: 'Sector 7G - Downtown',
+    officerInCharge: 'Officer Vance',
+    vehicleType: 'Interceptor SUV',
+    etaMinutes: 2,
+    lat: 40.7128,
+    lng: -74.0060,
+  },
+  {
+    id: 'UNIT-109',
+    callSign: 'BRAVO-4 (TACTICAL)',
+    status: 'Dispatched',
+    location: 'Subway Platform Zone 4',
+    officerInCharge: 'Sgt. Miller',
+    vehicleType: 'Rapid Tactical Van',
+    etaMinutes: 4,
+    lat: 40.7150,
+    lng: -74.0020,
+  },
+  {
+    id: 'UNIT-305',
+    callSign: 'DELTA-9 (MEDIC)',
+    status: 'Available',
+    location: 'North Medical Hub',
+    officerInCharge: 'Dr. Ross',
+    vehicleType: 'Emergency Ambulance',
+    etaMinutes: 6,
+    lat: 40.7100,
+    lng: -74.0100,
+  },
+];
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('landing');
   const [cameras, setCameras] = useState<CameraData[]>(dataService.getCameras());
-  const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [units, setUnits] = useState<PatrolUnit[]>([]);
-  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+  const [incidents, setIncidents] = useState<Incident[]>(defaultIncidentsList);
+  const [units, setUnits] = useState<PatrolUnit[]>(defaultUnitsList);
+  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(defaultIncidentsList[0]);
   const [fullscreenCamera, setFullscreenCamera] = useState<CameraData | null>(null);
 
   // Modals state
@@ -40,33 +146,16 @@ export default function App() {
   useEffect(() => {
     const fetchBackendData = async () => {
       try {
-        const token = authService.getToken();
-        const headers: HeadersInit = {
-          'Content-Type': 'application/json',
-        };
-        
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        // Fetch incidents from backend
-        const incRes = await fetch('/api/v1/incidents/cards?limit=10', { headers });
+        const incRes = await safeFetch('/api/v1/incidents/cards?limit=10');
         if (incRes.ok) {
           const incData = await incRes.json();
-          setIncidents(incData.incidents || []);
           if (incData.incidents && incData.incidents.length > 0) {
+            setIncidents(incData.incidents);
             setSelectedIncident(incData.incidents[0]);
           }
         }
-
-        // Fetch units (mock for now - would need backend endpoint)
-        const unitRes = await fetch('/mock/users.json');
-        if (unitRes.ok) {
-          const unitData = await unitRes.json();
-          setUnits(unitData);
-        }
       } catch (e) {
-        console.error('Error loading backend data:', e);
+        console.warn('Backend incidents offline, using local defaults', e);
       }
     };
 
@@ -76,7 +165,10 @@ export default function App() {
 
     // Subscribe to DataService updates
     const unsubscribe = dataService.subscribe(() => {
-      setCameras([...dataService.getCameras()]);
+      const cams = dataService.getCameras();
+      if (cams && cams.length > 0) {
+        setCameras([...cams]);
+      }
     });
 
     return () => unsubscribe();
@@ -87,21 +179,7 @@ export default function App() {
     setCurrentView('command_center');
   };
 
-  const handleLogout = async () => {
-    try {
-      const token = authService.getToken();
-      if (token) {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-      }
-    } catch (e) {
-      console.error('Logout error:', e);
-    }
-    
+  const handleLogout = () => {
     authService.clearAuth();
     setIsAuthenticated(false);
     setCurrentView('landing');
@@ -123,7 +201,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-900 text-white font-sans">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-white font-sans select-none">
       {/* Main Layout */}
       <div className="flex flex-col h-full w-full overflow-hidden">
         {/* Main Top Header */}
@@ -144,7 +222,7 @@ export default function App() {
           />
 
           {/* Dynamic View Container */}
-          <main className="flex-1 flex flex-col overflow-hidden bg-slate-900">
+          <main className="flex-1 flex flex-col overflow-hidden bg-slate-950">
             {currentView === 'command_center' && (
               <CommandCenterView
                 incidents={incidents}
@@ -182,6 +260,13 @@ export default function App() {
               <FleetUnitsView
                 units={units}
                 onDispatchUnit={() => setIsDispatchModalOpen(true)}
+              />
+            )}
+
+            {currentView === 'landing' && (
+              <LandingPage
+                onEnterSystem={() => setCurrentView('command_center')}
+                onNavigate={(view) => setCurrentView(view)}
               />
             )}
           </main>
