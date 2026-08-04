@@ -35,15 +35,36 @@ export class ValidationError extends Error {
 }
 
 /**
- * Enhanced fetch wrapper with error handling and 401 auto-redirect
+ * Resolves endpoint path to target backend URL
+ */
+export function getApiUrl(endpoint: string): string {
+  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+    return endpoint;
+  }
+
+  const envUrl = import.meta.env.VITE_API_BASE_URL || '';
+  const baseUrl = envUrl.trim()
+    ? envUrl.replace(/\/+$/, '')
+    : typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? 'http://localhost:8000'
+    : '';
+
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return baseUrl ? `${baseUrl}${cleanEndpoint}` : cleanEndpoint;
+}
+
+/**
+ * Enhanced fetch wrapper with error handling, URL resolution, and auto 401 handling
  */
 export async function safeFetch(
   url: string,
   options: RequestInit = {},
   retries: number = 3
 ): Promise<Response> {
+  const fullUrl = getApiUrl(url);
   const token = localStorage.getItem('auth_token');
   const isFormData = options.body instanceof FormData;
+
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string>),
@@ -57,45 +78,48 @@ export async function safeFetch(
 
   for (let i = 0; i < retries; i++) {
     try {
-      const response = await fetch(url, { ...options, headers });
+      const response = await fetch(fullUrl, { ...options, headers });
 
-      // Handle 401 Unauthorized - auto-redirect to login
+      // Handle 401 Unauthorized
       if (response.status === 401) {
-        console.warn('Token expired or invalid, redirecting to login');
-        // Clear invalid token
+        console.warn('Token expired or invalid');
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
-        // Reload page to force login
-        window.location.href = '/';
         throw new AuthenticationError('Session expired. Please login again.');
       }
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new APIError(
-          errorData.detail || `HTTP ${response.status}: ${response.statusText}`,
-          response.status,
-          url
-        );
+        let detailMsg = `HTTP ${response.status}: ${response.statusText}`;
+        const contentType = response.headers.get('content-type') || '';
+
+        if (contentType.includes('application/json')) {
+          try {
+            const errorData = await response.json();
+            detailMsg = errorData.detail || errorData.message || detailMsg;
+          } catch {
+            // fallback
+          }
+        } else {
+          detailMsg = `Server returned ${response.status} (${response.statusText}). Make sure backend API is running.`;
+        }
+
+        throw new APIError(detailMsg, response.status, fullUrl);
       }
 
       return response;
     } catch (error) {
       lastError = error as Error;
-      
-      // Don't retry on client errors (4xx) except 401 which we handle above
+
       if (error instanceof APIError && error.statusCode >= 400 && error.statusCode < 500 && error.statusCode !== 401) {
         throw error;
       }
 
-      // Don't retry on AuthenticationError
       if (error instanceof AuthenticationError) {
         throw error;
       }
 
-      // Wait before retrying
       if (i < retries - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
       }
     }
   }
@@ -137,7 +161,7 @@ export function getUserFriendlyError(error: Error): string {
       case 401:
         return 'Session expired. Please login again.';
       case 403:
-        return 'You don\'t have permission to perform this action';
+        return "You don't have permission to perform this action";
       case 404:
         return 'The requested resource was not found';
       case 429:
