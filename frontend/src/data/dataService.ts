@@ -19,69 +19,78 @@ interface BackendCamera {
 
 const defaultCamerasList: CameraData[] = [
   {
-    id: 'CAM-01',
-    name: 'North Subway Entrance 4B',
-    location: 'Sector 7G - New York, NY',
+    id: 'CAM-MDP-01',
+    name: 'MITS College Junction CCTV 01',
+    location: 'Sector 1 - MITS Campus, Madanapalle, AP',
+    status: 'REC',
+    fps: '30.0 FPS',
+    resolution: '1080p FHD',
+    aiStatus: 'CRITICAL AI ALERT',
+    aiStatusType: 'danger',
+    severity: 9.3,
+    lat: 13.6288,
+    lng: 78.4746,
+    videoUrl: '/assets/videos/accident/accident_001.mp4',
+    detections: [
+      { id: 1, type: 'car', label: 'Car Collision (94%)', confidence: 0.94, x: 20, y: 35, w: 40, h: 45, color: '#ef4444', trackId: 'TRK-101' },
+      { id: 2, type: 'person', label: 'Pedestrian (89%)', confidence: 0.89, x: 65, y: 40, w: 15, h: 35, color: '#3b82f6', trackId: 'TRK-102' }
+    ],
+    aiMetrics: { weapon: false, weaponConfidence: 0, fight: true, fightConfidence: 94, people: 3, blood: false, severity: 9.3, trackingIDs: [101, 102] },
+  },
+  {
+    id: 'CAM-MDP-02',
+    name: 'Madanapalle RTC Bus Stand Circle',
+    location: 'Sector 2 - Town Center, Madanapalle, AP',
     status: 'REC',
     fps: '30.0 FPS',
     resolution: '1080p FHD',
     aiStatus: 'HIGH THREAT DETECTED',
     aiStatusType: 'warning',
     severity: 7.4,
-    lat: 40.7128,
-    lng: -74.006,
-    videoUrl: '/assets/videos/accident/accident_001.mp4',
-    detections: [],
-    aiMetrics: { weapon: true, weaponConfidence: 88, fight: true, fightConfidence: 91, people: 4, blood: false, severity: 7.4, trackingIDs: [101, 102] },
+    lat: 13.6315,
+    lng: 78.4820,
+    videoUrl: '/assets/videos/weapon/weapon_001.mp4',
+    detections: [
+      { id: 1, type: 'person', label: 'Weapon Suspect (95%)', confidence: 0.95, x: 30, y: 25, w: 25, h: 55, color: '#f97316', trackId: 'TRK-201' }
+    ],
+    aiMetrics: { weapon: true, weaponConfidence: 95, fight: false, fightConfidence: 0, people: 5, blood: false, severity: 7.4, trackingIDs: [201] },
   },
   {
-    id: 'CAM-02',
-    name: 'Mall Atrium East Gate',
-    location: 'Sector 3A - New York, NY',
+    id: 'CAM-MDP-03',
+    name: 'Patel Road - Kadiri Junction',
+    location: 'Sector 3 - Commerce Hub, Madanapalle, AP',
     status: 'REC',
     fps: '30.0 FPS',
     resolution: '1080p FHD',
     aiStatus: 'MONITORING',
     aiStatusType: 'info',
-    severity: 5.0,
-    lat: 40.716,
-    lng: -74.001,
-    videoUrl: '/assets/videos/crowd/crowded_001.mp4',
-    detections: [],
-    aiMetrics: { weapon: false, weaponConfidence: 0, fight: false, fightConfidence: 0, people: 12, blood: false, severity: 5.0, trackingIDs: [201, 202] },
-  },
-  {
-    id: 'CAM-03',
-    name: 'Highway Interchange Sector 12',
-    location: 'Sector 12 - New York, NY',
-    status: 'REC',
-    fps: '30.0 FPS',
-    resolution: '1080p FHD',
-    aiStatus: 'NORMAL',
-    aiStatusType: 'success',
-    severity: 3.0,
-    lat: 40.722,
-    lng: -74.001,
+    severity: 5.2,
+    lat: 13.6240,
+    lng: 78.4680,
     videoUrl: '/assets/videos/fire/fire_001.mp4',
-    detections: [],
-    aiMetrics: { weapon: false, weaponConfidence: 0, fight: false, fightConfidence: 0, people: 2, blood: false, severity: 3.0, trackingIDs: [] },
+    detections: [
+      { id: 1, type: 'fire', label: 'Smoke Hazard (88%)', confidence: 0.88, x: 45, y: 15, w: 30, h: 40, color: '#eab308', trackId: 'TRK-301' }
+    ],
+    aiMetrics: { weapon: false, weaponConfidence: 0, fight: false, fightConfidence: 0, people: 2, blood: false, severity: 5.2, trackingIDs: [301] },
   },
   {
-    id: 'CAM-04',
-    name: 'Parking Structure P3 Level 2',
-    location: 'Sector 5B - New York, NY',
+    id: 'CAM-MDP-04',
+    name: 'Angallu Highway Checkpost NH-71',
+    location: 'Sector 4 - Highway Bypass, Madanapalle, AP',
     status: 'REC',
     fps: '30.0 FPS',
     resolution: '1080p FHD',
-    aiStatus: 'CRITICAL AI ALERT',
-    aiStatusType: 'danger',
-    severity: 9.2,
-    lat: 40.718,
-    lng: -73.998,
-    videoUrl: '/assets/videos/weapon/weapon_001.mp4',
-    detections: [],
-    aiMetrics: { weapon: true, weaponConfidence: 96, fight: true, fightConfidence: 89, people: 3, blood: false, severity: 9.2, trackingIDs: [301] },
-  },
+    aiStatus: 'HIGH THREAT DETECTED',
+    aiStatusType: 'warning',
+    severity: 7.8,
+    lat: 13.6350,
+    lng: 78.4910,
+    videoUrl: '/assets/videos/accident/accident_003.mp4',
+    detections: [
+      { id: 1, type: 'car', label: 'Vehicle Overturn (91%)', confidence: 0.91, x: 25, y: 30, w: 45, h: 40, color: '#ef4444', trackId: 'TRK-401' }
+    ],
+    aiMetrics: { weapon: false, weaponConfidence: 0, fight: false, fightConfidence: 0, people: 4, blood: false, severity: 7.8, trackingIDs: [401] },
+  }
 ];
 
 function transformBackendToCamera(backend: BackendCamera): CameraData {
@@ -118,8 +127,8 @@ function transformBackendToCamera(backend: BackendCamera): CameraData {
     aiStatus,
     aiStatusType,
     severity,
-    lat: backend.latitude,
-    lng: backend.longitude,
+    lat: backend.latitude || 13.6288,
+    lng: backend.longitude || 78.4746,
     videoUrl: backend.video_source || '/assets/videos/accident/accident_001.mp4',
     detections: [],
     aiMetrics: {
@@ -198,7 +207,7 @@ class DataService {
         }
       }
     } catch (error) {
-      console.warn('Backend API /api/cameras offline — using default cameras', error);
+      console.warn('Backend API /api/cameras offline — using Madanapalle default cameras', error);
     } finally {
       this.isLoading = false;
     }

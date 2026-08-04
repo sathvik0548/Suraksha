@@ -16,62 +16,68 @@ import { FullscreenCameraModal } from './components/modals/FullscreenCameraModal
 import { LoginPage } from './components/auth/LoginPage';
 import { safeFetch } from './utils/errorHandling';
 
-const defaultIncidentsList: Incident[] = [
+const madanapalleIncidents: Incident[] = [
   {
-    id: 'INC-8812',
-    title: 'PHYSICAL ALTERCATION DETECTED',
-    location: 'Subway Platform - Zone 4',
-    cameraId: 'CAM-001',
+    id: 'INC-MDP-8812',
+    title: 'VEHICLE ACCIDENT & IMPACT DETECTED',
+    location: 'MITS College Junction - Sector 1, Madanapalle',
+    cameraId: 'CAM-MDP-01',
     severity: 9.3,
     status: 'Active',
     timestamp: '23:41:02 UTC',
-    description: 'High threat physical violent altercation detected by Sentinel AI YOLO vision model.',
-    detectedObjects: ['person (3)', 'backpack (1)'],
+    description: 'High impact vehicle crash detected near MITS Engineering College entrance by Sentinel YOLO vision model.',
+    detectedObjects: ['car (2)', 'person (3)'],
     aiConfidence: 98.4,
-    aiAnalysis: {
-      weapon: true,
-      weaponConfidence: 95.2,
-      fight: true,
-      fightConfidence: 92.0,
-      people: 3,
-      blood: false,
-      severity: 9.3,
-      trackingIDs: ['TRK-104', 'TRK-105']
-    }
-  },
-  {
-    id: 'INC-8811',
-    title: 'RESTRICTED INTRUSION ALERT',
-    location: 'Main Terminal Lobby',
-    cameraId: 'CAM-002',
-    severity: 7.4,
-    status: 'Active',
-    timestamp: '23:38:15 UTC',
-    description: 'Unauthorized perimeter crossing detected after operational hours.',
-    detectedObjects: ['person (1)'],
-    aiConfidence: 94.2,
+    lat: 13.6288,
+    lng: 78.4746,
     aiAnalysis: {
       weapon: false,
       weaponConfidence: 0,
-      fight: false,
-      fightConfidence: 0,
-      people: 1,
+      fight: true,
+      fightConfidence: 94.0,
+      people: 3,
       blood: false,
-      severity: 7.4,
-      trackingIDs: ['TRK-201']
+      severity: 9.3,
+      trackingIDs: [101, 102]
     }
   },
   {
-    id: 'INC-8810',
-    title: 'UNATTENDED BAGGAGE DETECTED',
-    location: 'North Concourse - Gate 12',
-    cameraId: 'CAM-003',
+    id: 'INC-MDP-8811',
+    title: 'WEAPON SIGNATURE LOCK ALERT',
+    location: 'RTC Bus Stand Circle - Sector 2, Madanapalle',
+    cameraId: 'CAM-MDP-02',
+    severity: 7.4,
+    status: 'Active',
+    timestamp: '23:38:15 UTC',
+    description: 'Suspect carrying metallic weapon object logged by town center surveillance stream.',
+    detectedObjects: ['person (2)', 'weapon (1)'],
+    aiConfidence: 95.2,
+    lat: 13.6315,
+    lng: 78.4820,
+    aiAnalysis: {
+      weapon: true,
+      weaponConfidence: 95.2,
+      fight: false,
+      fightConfidence: 0,
+      people: 2,
+      blood: false,
+      severity: 7.4,
+      trackingIDs: [201]
+    }
+  },
+  {
+    id: 'INC-MDP-8810',
+    title: 'SMOKE & FIRE ANOMALY DETECTED',
+    location: 'Patel Road Kadiri Junction - Sector 3, Madanapalle',
+    cameraId: 'CAM-MDP-03',
     severity: 5.8,
     status: 'Investigating',
     timestamp: '23:25:00 UTC',
-    description: 'Unattended suitcase stationary for > 8 minutes.',
-    detectedObjects: ['suitcase (1)'],
-    aiConfidence: 91.0,
+    description: 'Thermal anomaly and smoke plume flagged near commercial district.',
+    detectedObjects: ['fire (1)'],
+    aiConfidence: 89.0,
+    lat: 13.6240,
+    lng: 78.4680,
     aiAnalysis: {
       weapon: false,
       weaponConfidence: 0,
@@ -80,44 +86,59 @@ const defaultIncidentsList: Incident[] = [
       people: 0,
       blood: false,
       severity: 5.8,
-      trackingIDs: []
+      trackingIDs: [301]
     }
   }
 ];
 
-const defaultUnitsList: PatrolUnit[] = [
+const madanapalleUnits: PatrolUnit[] = [
   {
-    id: 'UNIT-402',
-    callSign: 'ALPHA-1 (PATROL)',
-    status: 'Available',
-    location: 'Sector 7G - Downtown',
-    officerInCharge: 'Officer Vance',
-    vehicleType: 'Interceptor SUV',
-    etaMinutes: 2,
-    lat: 40.7128,
-    lng: -74.0060,
+    id: 'UNIT-MDP-402',
+    name: 'MADANAPALLE PATROL 402 (ALPHA-1)',
+    officers: ['Officer K. Reddy', 'Officer S. Naidu'],
+    badge: 'AP-POL-402',
+    status: 'PATROLLING',
+    statusColor: 'success',
+    vehicle: 'Mahindra Bolero Police Interceptor',
+    location: 'Sector 1 - MITS Campus Zone, Madanapalle',
+    lat: 13.6288,
+    lng: 78.4746,
+    distance: '0.5 km',
+    eta: '2 mins',
+    radioChannel: 'CH-1 (MADANAPALLE CENTRAL)',
+    equipment: ['Taser 7', 'BodyCam v4', 'First Aid Kit'],
   },
   {
-    id: 'UNIT-109',
-    callSign: 'BRAVO-4 (TACTICAL)',
-    status: 'Dispatched',
-    location: 'Subway Platform Zone 4',
-    officerInCharge: 'Sgt. Miller',
-    vehicleType: 'Rapid Tactical Van',
-    etaMinutes: 4,
-    lat: 40.7150,
-    lng: -74.0020,
+    id: 'UNIT-MDP-109',
+    name: 'RTC BUS STAND TACTICAL 109 (BRAVO-4)',
+    officers: ['Sgt. M. Rao', 'Constable V. Kumar'],
+    badge: 'AP-POL-109',
+    status: 'DISPATCHED',
+    statusColor: 'danger',
+    vehicle: 'Rapid Emergency Response Van',
+    location: 'Sector 2 - Bus Stand Circle, Madanapalle',
+    lat: 13.6315,
+    lng: 78.4820,
+    distance: '1.2 km',
+    eta: '3 mins',
+    radioChannel: 'CH-3 (EMERGENCY OVERRIDE)',
+    equipment: ['Shields', 'Thermal Scanner', 'Defibrillator'],
   },
   {
-    id: 'UNIT-305',
-    callSign: 'DELTA-9 (MEDIC)',
-    status: 'Available',
-    location: 'North Medical Hub',
-    officerInCharge: 'Dr. Ross',
-    vehicleType: 'Emergency Ambulance',
-    etaMinutes: 6,
-    lat: 40.7100,
-    lng: -74.0100,
+    id: 'UNIT-MDP-305',
+    name: 'HIGHWAY PATROL 305 (ANGALLU AIRBORNE)',
+    officers: ['Capt. D. Sharma', 'Lt. A. Verma'],
+    badge: 'AP-AIR-305',
+    status: 'AIRBORNE',
+    statusColor: 'info',
+    vehicle: 'NH-71 Highway Drone / Patrol Helicopter',
+    location: 'Sector 4 - Angallu Highway Bypass, Madanapalle',
+    lat: 13.6350,
+    lng: 78.4910,
+    distance: '1.8 km',
+    eta: '1 min',
+    radioChannel: 'CH-5 (HIGHWAY AIR LINK)',
+    equipment: ['FLIR Camera', 'Megaphone Array', 'Searchlight'],
   },
 ];
 
@@ -125,9 +146,9 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('landing');
   const [cameras, setCameras] = useState<CameraData[]>(dataService.getCameras());
-  const [incidents, setIncidents] = useState<Incident[]>(defaultIncidentsList);
-  const [units, setUnits] = useState<PatrolUnit[]>(defaultUnitsList);
-  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(defaultIncidentsList[0]);
+  const [incidents, setIncidents] = useState<Incident[]>(madanapalleIncidents);
+  const [units, setUnits] = useState<PatrolUnit[]>(madanapalleUnits);
+  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(madanapalleIncidents[0]);
   const [fullscreenCamera, setFullscreenCamera] = useState<CameraData | null>(null);
 
   // Modals state
@@ -155,7 +176,7 @@ export default function App() {
           }
         }
       } catch (e) {
-        console.warn('Backend incidents offline, using local defaults', e);
+        console.warn('Backend incidents offline, using Madanapalle defaults', e);
       }
     };
 

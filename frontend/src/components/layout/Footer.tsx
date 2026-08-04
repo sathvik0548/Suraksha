@@ -12,9 +12,9 @@ export const Footer: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-4 lg:gap-6">
-        <span className="hidden sm:inline text-slate-400">LAT: 40.7128 N</span>
-        <span className="hidden sm:inline text-slate-400">LON: 74.0060 W</span>
-        <span className="text-slate-200 font-bold bg-white/10 px-2 py-0.5 rounded">OPERATOR: HENDERSON.J</span>
+        <span className="hidden sm:inline text-slate-300 font-bold">LAT: 13.6288 N</span>
+        <span className="hidden sm:inline text-slate-300 font-bold">LON: 78.4746 E (MADANAPALLE, AP)</span>
+        <span className="text-slate-200 font-bold bg-white/10 px-2 py-0.5 rounded">OPERATOR: COMMANDER.S</span>
       </div>
     </footer>
   );
