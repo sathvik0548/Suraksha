@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  brain-api:
+    build:
+      context: ./brain
+      dockerfile: Dockerfile
+    container_name: suraksha-brain-api
+    ports:
+      - "8000:8000"
+    environment:
+      - SENTINEL_API_HOST=0.0.0.0
+      - SENTINEL_API_PORT=8000
+      - DEMO_MODE=false
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:80,http://127.0.0.1:3000
+    volumes:
+      - ./brain/models:/app/models
+      - ./brain/uploads:/app/uploads
+      - ./brain/outputs:/app/outputs
+      - ./brain/logs:/app/logs
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: suraksha-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - brain-api
+    restart: unless-stopped
+
+volumes:
+  model_data:
+  output_data:

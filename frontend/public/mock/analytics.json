@@ -1,0 +1,35 @@
+{
+  "systemHealth": {
+    "gpuLoad": 34.2,
+    "fpsThroughput": 178.5,
+    "activeStreams": 12,
+    "latencyMs": 18.4,
+    "aiAccuracy": 98.4,
+    "uptime": "99.98%"
+  },
+  "todaySummary": {
+    "totalIncidents": 24,
+    "criticalThreats": 3,
+    "avgResponseMinutes": 4.2,
+    "activeUnits": 12,
+    "resolvedCount": 19
+  },
+  "threatCategories": [
+    { "category": "Physical Fights / Assaults", "count": 8, "percentage": 33.3 },
+    { "category": "Weapon Detections", "count": 4, "percentage": 16.7 },
+    { "category": "Perimeter Intrusions", "count": 5, "percentage": 20.8 },
+    { "category": "Unattended Packages", "count": 4, "percentage": 16.7 },
+    { "category": "Traffic Collisions", "count": 3, "percentage": 12.5 }
+  ],
+  "hourlyIncidentTrend": {
+    "categories": ["00:00", "02:00", "04:00", "06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"],
+    "incidents": [2, 1, 0, 3, 5, 8, 11, 14, 9, 6, 4, 2],
+    "criticalAlerts": [0, 0, 0, 1, 1, 2, 3, 3, 1, 1, 0, 0]
+  },
+  "severityDistribution": {
+    "critical": 12.5,
+    "high": 29.2,
+    "medium": 41.7,
+    "low": 16.6
+  }
+}
