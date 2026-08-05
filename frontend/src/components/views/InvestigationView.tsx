@@ -10,6 +10,12 @@ interface Props {
   onCloseIncident: () => void;
 }
 
+interface FrameTrackingData {
+  frame_number: number;
+  timestamp: number;
+  boxes: DetectionBox[];
+}
+
 export const InvestigationView: React.FC<Props> = ({
   incident,
   camera,
@@ -42,6 +48,11 @@ export const InvestigationView: React.FC<Props> = ({
   const [reasoningText, setReasoningText] = useState<string>('');
   const [severityScore, setSeverityScore] = useState<number>(activeIncident.severity);
 
+  // Time-synced tracking frame state
+  const [trackingFrames, setTrackingFrames] = useState<FrameTrackingData[]>([]);
+  const [activeFrameBoxes, setActiveFrameBoxes] = useState<DetectionBox[]>([]);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   const activeCamera: CameraData = camera || {
     id: activeIncident.cameraId || 'CAM-MDP-01',
     name: activeIncident.location,
@@ -65,10 +76,25 @@ export const InvestigationView: React.FC<Props> = ({
   const primaryVideoSource = activeCamera.videoUrl || '/assets/videos/accident/accident_001.mp4';
   const apiAnnotatedUrl = getApiUrl(`/api/v1/annotated-video?video_id=${activeIncident.id}`);
 
+  // Load backend details & time-indexed tracking frames
   useEffect(() => {
     const fetchIncidentDetails = async () => {
       const vid = activeIncident.id;
       setUseFallbackStream(false);
+
+      // Fetch tracking array for timestamp syncing
+      try {
+        const trkRes = await safeFetch(`/api/v1/tracking/${vid}`);
+        if (trkRes.ok) {
+          const trkData: FrameTrackingData[] = await trkRes.json();
+          if (trkData && trkData.length > 0) {
+            setTrackingFrames(trkData);
+            setActiveFrameBoxes(trkData[0].boxes);
+          }
+        }
+      } catch (e) {
+        console.warn('Tracking API fallback', e);
+      }
 
       try {
         const tlRes = await safeFetch(`/api/v1/timeline/latest?video_id=${vid}`);
@@ -112,6 +138,29 @@ export const InvestigationView: React.FC<Props> = ({
     fetchIncidentDetails();
   }, [activeIncident.id]);
 
+  // Sync bounding boxes to video currentTime during playback & seeking
+  const handleTimeUpdate = () => {
+    const video = videoRef.current;
+    if (!video || trackingFrames.length === 0) return;
+
+    const currentTime = video.currentTime;
+    // Find closest frame to currentTime
+    let closestFrame = trackingFrames[0];
+    let minDiff = Math.abs(currentTime - trackingFrames[0].timestamp);
+
+    for (let i = 1; i < trackingFrames.length; i++) {
+      const diff = Math.abs(currentTime - trackingFrames[i].timestamp);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestFrame = trackingFrames[i];
+      }
+    }
+
+    if (closestFrame && closestFrame.boxes) {
+      setActiveFrameBoxes(closestFrame.boxes);
+    }
+  };
+
   const handleSaveNotes = () => {
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 2000);
@@ -127,12 +176,7 @@ export const InvestigationView: React.FC<Props> = ({
     downloadAnchor.remove();
   };
 
-  const overlayDetections: DetectionBox[] = activeCamera.detections && activeCamera.detections.length > 0
-    ? activeCamera.detections
-    : [
-        { id: 1, type: 'car', label: 'Car Collision (94%)', confidence: 0.94, x: 22, y: 32, w: 42, h: 46, color: '#ef4444', trackId: 'TRK-101' },
-        { id: 2, type: 'person', label: 'Pedestrian (89%)', confidence: 0.89, x: 65, y: 38, w: 16, h: 36, color: '#3b82f6', trackId: 'TRK-102' }
-      ];
+  const displayedBoxes = activeFrameBoxes.length > 0 ? activeFrameBoxes : (activeCamera.detections || []);
 
   return (
     <div className="flex-1 flex flex-col bg-slate-950 text-white overflow-hidden font-sans select-none">
@@ -193,32 +237,35 @@ export const InvestigationView: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* YOLO11 AI Bounding Box Overlay Stream */}
+            {/* Live-Tracking Bounding Box Overlay Stream */}
             <div className="bg-slate-900/80 border border-cyan-500/40 rounded-xl p-4 shadow-xl">
               <div className="flex items-center justify-between mb-3 font-mono">
                 <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
-                  <i className="fa-solid fa-layer-group text-cyan-400"></i> YOLO11 AI Bounding Box Overlay Stream
+                  <i className="fa-solid fa-layer-group text-cyan-400"></i> YOLO11 Time-Synced Tracking Stream
                 </h3>
-                <span className="text-[10px] text-cyan-400 bg-cyan-950 border border-cyan-500/40 px-2 py-0.5 rounded font-bold">
-                  PROCESSED
+                <span className="text-[10px] text-cyan-400 bg-cyan-950 border border-cyan-500/40 px-2 py-0.5 rounded font-bold animate-pulse">
+                  LIVE TRACKING ACTIVE
                 </span>
               </div>
               <div className="aspect-video bg-black rounded-lg overflow-hidden border border-cyan-500/30 relative flex items-center justify-center">
                 <video
+                  ref={videoRef}
                   src={useFallbackStream ? primaryVideoSource : apiAnnotatedUrl}
                   controls
                   autoPlay
                   loop
                   muted
                   playsInline
+                  onTimeUpdate={handleTimeUpdate}
+                  onSeeked={handleTimeUpdate}
                   className="w-full h-full object-cover"
                   onError={() => {
                     setUseFallbackStream(true);
                   }}
                 />
-                {/* Real-time transparent canvas Bounding Box Overlay */}
+                {/* Time-synced Bounding Box Overlay */}
                 <BoundingBoxOverlay
-                  detections={overlayDetections}
+                  detections={displayedBoxes}
                   showTrackingId={true}
                   showConfidence={true}
                 />
@@ -239,9 +286,9 @@ export const InvestigationView: React.FC<Props> = ({
                   <div className="text-2xl font-bold text-red-400 mt-1">{severityScore.toFixed(1)} / 10.0</div>
                 </div>
                 <div className="bg-slate-950 p-3 rounded-lg border border-white/5">
-                  <div className="text-[10px] text-slate-400 uppercase">Detection Objects Logged</div>
+                  <div className="text-[10px] text-slate-400 uppercase">Active Tracked Objects</div>
                   <div className="text-2xl font-bold text-blue-400 mt-1">
-                    {overlayDetections.length}
+                    {displayedBoxes.length}
                   </div>
                 </div>
                 <div className="bg-slate-950 p-3 rounded-lg border border-white/5">

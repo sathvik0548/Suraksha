@@ -112,6 +112,8 @@ class APIConfig:
     debug: bool = True
     demo_mode: bool = False
     cors_origins: List[str] = field(default_factory=lambda: [
+        "*",
+        "https://suraksha-bice.vercel.app",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:5173",

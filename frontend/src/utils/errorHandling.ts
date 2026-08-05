@@ -34,23 +34,16 @@ export class ValidationError extends Error {
   }
 }
 
-/**
- * Resolves endpoint path to target backend URL
- */
+import { API_BASE_URL } from '../config/api';
+
 export function getApiUrl(endpoint: string): string {
   if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
     return endpoint;
   }
 
-  const envUrl = import.meta.env.VITE_API_BASE_URL || '';
-  const baseUrl = envUrl.trim()
-    ? envUrl.replace(/\/+$/, '')
-    : typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'http://localhost:8000'
-    : '';
-
+  const baseUrl = API_BASE_URL.replace(/\/+$/, '');
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  return baseUrl ? `${baseUrl}${cleanEndpoint}` : cleanEndpoint;
+  return `${baseUrl}${cleanEndpoint}`;
 }
 
 /**
