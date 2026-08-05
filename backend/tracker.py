@@ -78,21 +78,27 @@ class ObjectTracker:
                 new_track_thresh=0.6,
                 track_buffer=config.model.max_track_age,
                 match_thresh=config.model.tracker_iou_threshold,
-                fuse_score=True
+                fuse_score=True,
+                fps=30
             )
-            self.tracker = BYTETracker(args=args, frame_rate=30)
+            self.tracker = BYTETracker(args=args)
         except Exception as e:
             self.logger.warning(f"BYTETracker initialization with args failed: {e}")
-            from types import SimpleNamespace
-            args = SimpleNamespace(
-                track_high_thresh=0.5,
-                track_low_thresh=0.1,
-                new_track_thresh=0.6,
-                track_buffer=30,
-                match_thresh=0.3,
-                fuse_score=True
-            )
-            self.tracker = BYTETracker(args=args, frame_rate=30)
+            try:
+                from types import SimpleNamespace
+                args = SimpleNamespace(
+                    track_high_thresh=0.5,
+                    track_low_thresh=0.1,
+                    new_track_thresh=0.6,
+                    track_buffer=30,
+                    match_thresh=0.3,
+                    fuse_score=True,
+                    fps=30
+                )
+                self.tracker = BYTETracker(args=args)
+            except Exception as e2:
+                self.logger.warning(f"BYTETracker fallback instantiation: {e2}")
+                self.tracker = None
         
         # Track storage
         self.track_results: List[TrackResult] = []

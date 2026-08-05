@@ -6,7 +6,7 @@ export const AnalyticsView: React.FC = () => {
   const distributionChartRef = useRef<HTMLDivElement>(null);
   
   // Fetch real-time statistics from backend
-  const { data: backendStats, loading: statsLoading } = useRealTimeData<any>({ endpoint: '/api/v1/statistics', interval: 5000 });
+  const { data: backendStats, loading: statsLoading } = useRealTimeData<any>({ endpoint: '/api/v1/analytics', interval: 5000 });
   
   const [stats, setStats] = useState({
     incidentsTrend: [0, 0, 0, 1, 1, 2, 3, 3, 1, 1, 0, 0],
@@ -14,10 +14,15 @@ export const AnalyticsView: React.FC = () => {
     distribution: [33, 17, 21, 17, 12],
     healthMetrics: {
       accuracy: 98.4,
-      fps: 178,
-      cameras: 6,
+      fps: 120,
+      cameras: 19,
       alerts: 3
-    }
+    },
+    recentIncidents: [
+      { id: 'INC-MDP-8812', title: 'VEHICLE ACCIDENT & IMPACT DETECTED', location: 'MITS College Junction - Sector 1, Madanapalle', severity: 9.3, status: 'Active' },
+      { id: 'INC-MDP-8811', title: 'WEAPON SIGNATURE LOCK ALERT', location: 'RTC Bus Stand Circle - Sector 2, Madanapalle', severity: 7.4, status: 'Active' },
+      { id: 'INC-MDP-8810', title: 'SMOKE & FIRE ANOMALY DETECTED', location: 'Patel Road Kadiri Junction - Sector 3, Madanapalle', severity: 5.8, status: 'Investigating' }
+    ]
   });
 
   // Update stats when backend data changes
@@ -27,7 +32,8 @@ export const AnalyticsView: React.FC = () => {
         incidentsTrend: backendStats.incidents_trend || stats.incidentsTrend,
         totalIncidents: backendStats.total_incidents || stats.totalIncidents,
         distribution: backendStats.distribution || stats.distribution,
-        healthMetrics: backendStats.health_metrics || stats.healthMetrics
+        healthMetrics: backendStats.health_metrics || stats.healthMetrics,
+        recentIncidents: backendStats.recent_incidents && backendStats.recent_incidents.length > 0 ? backendStats.recent_incidents : stats.recentIncidents
       });
     }
   }, [backendStats]);
@@ -115,7 +121,7 @@ export const AnalyticsView: React.FC = () => {
           <h2 className="text-lg font-bold text-white">Analytics Dashboard</h2>
           <p className="text-sm text-slate-400">Real-time system performance and incident statistics</p>
         </div>
-        {statsLoading && <span className="text-sm text-slate-400">Loading...</span>}
+        {statsLoading && <span className="text-sm text-slate-400">Syncing live analytics...</span>}
       </div>
 
       {/* KPI Cards */}
@@ -154,12 +160,15 @@ export const AnalyticsView: React.FC = () => {
       </div>
 
       {/* Incident Summary Table */}
-      <div className="bg-slate-800 p-5 rounded-lg">
-        <h3 className="text-md font-bold text-white mb-3">Recent Incidents Summary</h3>
+      <div className="bg-slate-800 p-5 rounded-lg font-mono">
+        <h3 className="text-md font-bold text-white mb-3 flex items-center justify-between">
+          <span>Recent Incidents Summary</span>
+          <span className="text-xs text-blue-400 font-normal">{stats.recentIncidents.length} Records</span>
+        </h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-700">
+              <tr className="border-b border-slate-700 text-xs">
                 <th className="text-left py-2 px-3 text-slate-400 font-medium">ID</th>
                 <th className="text-left py-2 px-3 text-slate-400 font-medium">Title</th>
                 <th className="text-left py-2 px-3 text-slate-400 font-medium">Location</th>
@@ -168,27 +177,25 @@ export const AnalyticsView: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-slate-700">
-                <td className="py-2 px-3 text-white">INC-001</td>
-                <td className="py-2 px-3 text-white">Weapon Detection</td>
-                <td className="py-2 px-3 text-slate-400">Sector 7G</td>
-                <td className="py-2 px-3 text-red-400">8.5</td>
-                <td className="py-2 px-3 text-green-400">Resolved</td>
-              </tr>
-              <tr className="border-b border-slate-700">
-                <td className="py-2 px-3 text-white">INC-002</td>
-                <td className="py-2 px-3 text-white">Fight Detected</td>
-                <td className="py-2 px-3 text-slate-400">Sector 3A</td>
-                <td className="py-2 px-3 text-yellow-400">6.2</td>
-                <td className="py-2 px-3 text-blue-400">Investigating</td>
-              </tr>
-              <tr>
-                <td className="py-2 px-3 text-white">INC-003</td>
-                <td className="py-2 px-3 text-white">Perimeter Breach</td>
-                <td className="py-2 px-3 text-slate-400">Sector 9</td>
-                <td className="py-2 px-3 text-red-400">7.8</td>
-                <td className="py-2 px-3 text-yellow-400">Dispatched</td>
-              </tr>
+              {stats.recentIncidents.map((inc) => (
+                <tr key={inc.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                  <td className="py-2.5 px-3 text-white font-bold text-xs">{inc.id}</td>
+                  <td className="py-2.5 px-3 text-slate-200 text-xs">{inc.title}</td>
+                  <td className="py-2.5 px-3 text-slate-400 text-xs truncate max-w-[200px]">{inc.location}</td>
+                  <td className="py-2.5 px-3 font-bold text-xs">
+                    <span className={inc.severity >= 8.0 ? 'text-red-400' : (inc.severity >= 6.0 ? 'text-amber-400' : 'text-blue-400')}>
+                      {typeof inc.severity === 'number' ? inc.severity.toFixed(1) : inc.severity}
+                    </span>
+                  </td>
+                  <td className="py-2.5 px-3 text-xs">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      inc.status === 'Active' ? 'bg-red-950 text-red-400 border border-red-500/30' : (inc.status === 'Resolved' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' : 'bg-blue-950 text-blue-400 border border-blue-500/30')
+                    }`}>
+                      {inc.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

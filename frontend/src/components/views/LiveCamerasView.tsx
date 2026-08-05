@@ -46,11 +46,13 @@ export const LiveCamerasView: React.FC<Props> = ({ cameras, onExpandCamera }) =>
     setShowEditCamera(null);
   };
 
-  const filteredCameras = cameras.filter((cam) => {
-    if (filterStatus === 'online') return cam.status === 'REC';
-    if (filterStatus === 'offline') return cam.status === 'OFFLINE';
-    return true;
-  });
+  const filteredCameras = [...cameras]
+    .sort((a, b) => (b.severity || 0) - (a.severity || 0))
+    .filter((cam) => {
+      if (filterStatus === 'online') return cam.status === 'REC';
+      if (filterStatus === 'offline') return cam.status === 'OFFLINE';
+      return true;
+    });
 
   return (
     <div className="flex-1 flex flex-col bg-slate-950 text-white overflow-hidden font-sans select-none">
@@ -108,7 +110,7 @@ export const LiveCamerasView: React.FC<Props> = ({ cameras, onExpandCamera }) =>
               >
                 {/* Video Stream Box */}
                 <div className="h-44 bg-black relative">
-                  <CctvPlayer camera={camera} onExpand={onExpandCamera} showAiOverlay={true} />
+                  <CctvPlayer camera={camera} onExpand={onExpandCamera} onEdit={(cam) => setShowEditCamera(cam)} showAiOverlay={true} />
                 </div>
 
                 {/* Info & Actions */}

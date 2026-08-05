@@ -24,6 +24,7 @@ export interface DetectionBox {
 
 export interface CameraData {
   id: string;
+  camera_id?: string;
   name: string;
   location: string;
   status: 'REC' | 'WEAK_SIGNAL' | 'AI_ACTIVE' | 'OFFLINE';
@@ -35,6 +36,7 @@ export interface CameraData {
   lat: number;
   lng: number;
   videoUrl: string;
+  thumbnailUrl?: string;
   detections: DetectionBox[];
   aiMetrics: AiMetrics;
 }

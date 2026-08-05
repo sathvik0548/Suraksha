@@ -1,0 +1,72 @@
+[
+  {
+    "id": "UNIT-MDP-402",
+    "name": "MADANAPALLE PATROL 402 (ALPHA-1)",
+    "officers": [
+      "Inspector S. Badam",
+      "Officer K. Reddy",
+      "Officer S. Naidu"
+    ],
+    "badge": "AP-POL-402",
+    "status": "DISPATCHED",
+    "statusColor": "danger",
+    "vehicle": "Mahindra Bolero Police Interceptor",
+    "location": "Sector 1 - MITS Campus Zone, Madanapalle",
+    "lat": 13.6288,
+    "lng": 78.4746,
+    "distance": "0.5 km",
+    "eta": "2 mins",
+    "radioChannel": "CH-1 (MADANAPALLE CENTRAL)",
+    "equipment": [
+      "Taser 7",
+      "BodyCam v4",
+      "First Aid Kit"
+    ]
+  },
+  {
+    "id": "UNIT-MDP-109",
+    "name": "RTC BUS STAND TACTICAL 109 (BRAVO-4)",
+    "officers": [
+      "Sgt. M. Rao",
+      "Constable V. Kumar"
+    ],
+    "badge": "AP-POL-109",
+    "status": "DISPATCHED",
+    "statusColor": "danger",
+    "vehicle": "Rapid Emergency Response Van",
+    "location": "Sector 2 - Bus Stand Circle, Madanapalle",
+    "lat": 13.6315,
+    "lng": 78.482,
+    "distance": "1.2 km",
+    "eta": "3 mins",
+    "radioChannel": "CH-3 (EMERGENCY OVERRIDE)",
+    "equipment": [
+      "Shields",
+      "Thermal Scanner",
+      "Defibrillator"
+    ]
+  },
+  {
+    "id": "UNIT-MDP-305",
+    "name": "HIGHWAY PATROL 305 (ANGALLU AIRBORNE)",
+    "officers": [
+      "Capt. D. Sharma",
+      "Lt. A. Verma"
+    ],
+    "badge": "AP-AIR-305",
+    "status": "AIRBORNE",
+    "statusColor": "info",
+    "vehicle": "NH-71 Highway Drone / Patrol Helicopter",
+    "location": "Sector 4 - Angallu Highway Bypass, Madanapalle",
+    "lat": 13.635,
+    "lng": 78.491,
+    "distance": "1.8 km",
+    "eta": "1 min",
+    "radioChannel": "CH-5 (HIGHWAY AIR LINK)",
+    "equipment": [
+      "FLIR Camera",
+      "Megaphone Array",
+      "Searchlight"
+    ]
+  }
+]

@@ -3,20 +3,21 @@ import { ViewType } from '../../types';
 
 interface Props {
   currentView: ViewType;
+  cameraCount?: number;
   onNavigate: (view: ViewType) => void;
   onQuickDispatch: () => void;
   onLogout?: () => void;
 }
 
-export const Navbar: React.FC<Props> = ({ currentView, onNavigate, onQuickDispatch, onLogout }) => {
-  const [utcTime, setUtcTime] = useState('');
+export const Navbar: React.FC<Props> = ({ currentView, cameraCount = 0, onNavigate, onQuickDispatch, onLogout }) => {
+  const [istTime, setIstTime] = useState('');
 
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
-      const timeStr = now.toISOString().split('T')[1].slice(0, 8);
-      setUtcTime(`${dateStr} | ${timeStr} UTC`);
+      const timeStr = now.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false });
+      const dateStr = now.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+      setIstTime(`${dateStr} | ${timeStr} IST`);
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
@@ -53,7 +54,7 @@ export const Navbar: React.FC<Props> = ({ currentView, onNavigate, onQuickDispat
           </div>
           <div className="flex items-center gap-2 bg-blue-950/40 border border-blue-500/30 px-2.5 py-1 rounded">
             <i className="fa-solid fa-tower-cell text-blue-400 text-xs"></i>
-            <span className="text-blue-300 font-bold">12 CCTV STREAMS</span>
+            <span className="text-blue-300 font-bold">{cameraCount > 0 ? `${cameraCount} CCTV STREAMS` : 'CCTV STREAMS'}</span>
           </div>
         </div>
       </div>
@@ -118,12 +119,12 @@ export const Navbar: React.FC<Props> = ({ currentView, onNavigate, onQuickDispat
 
       {/* Right: Clock, Quick Dispatch & Log Out */}
       <div className="flex items-center gap-3 lg:gap-5 font-mono">
-        {/* UTC Clock */}
+        {/* IST Clock */}
         <div className="text-right hidden sm:block">
           <div className="text-[9px] text-slate-400 uppercase tracking-widest flex items-center gap-1 justify-end">
-            <i className="fa-solid fa-clock text-[9px] text-blue-400"></i> Global Telemetry
+            <i className="fa-solid fa-clock text-[9px] text-blue-400"></i> Indian Standard Time
           </div>
-          <div className="text-xs lg:text-sm font-bold text-white tracking-wide">{utcTime || '2026-08-05 | 11:25:04 UTC'}</div>
+          <div className="text-xs lg:text-sm font-bold text-white tracking-wide">{istTime || '05 AUG 2026 | 12:30:00 IST'}</div>
         </div>
 
         {/* Quick Dispatch */}

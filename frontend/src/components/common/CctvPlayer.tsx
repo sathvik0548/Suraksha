@@ -5,10 +5,11 @@ import { BoundingBoxOverlay } from './BoundingBoxOverlay';
 interface Props {
   camera: CameraData;
   onExpand?: (camera: CameraData) => void;
+  onEdit?: (camera: CameraData) => void;
   showAiOverlay?: boolean;
 }
 
-export const CctvPlayer: React.FC<Props> = ({ camera, onExpand, showAiOverlay = true }) => {
+export const CctvPlayer: React.FC<Props> = ({ camera, onExpand, onEdit, showAiOverlay = true }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -108,11 +109,12 @@ export const CctvPlayer: React.FC<Props> = ({ camera, onExpand, showAiOverlay = 
         <video
           ref={videoRef}
           src={camera.videoUrl}
+          poster={camera.thumbnailUrl}
           autoPlay
           muted
           loop
           playsInline
-          className="absolute inset-0 w-full h-full object-cover opacity-80"
+          className="absolute inset-0 w-full h-full object-cover opacity-90 z-0"
           onError={(e) => {
             // Silently fall back to canvas generator
             (e.target as HTMLVideoElement).style.display = 'none';
@@ -164,6 +166,17 @@ export const CctvPlayer: React.FC<Props> = ({ camera, onExpand, showAiOverlay = 
             >
               SEV: {camera.severity}
             </span>
+
+            {/* Edit Camera Button */}
+            {onEdit && (
+              <button
+                onClick={() => onEdit(camera)}
+                className="w-6 h-6 bg-black/60 hover:bg-cyan-600 text-slate-300 hover:text-white rounded flex items-center justify-center transition-colors border border-white/10"
+                title="Edit Camera Metadata"
+              >
+                <i className="fa-solid fa-pen-to-square text-[10px]"></i>
+              </button>
+            )}
 
             {/* Expand Fullscreen Button */}
             {onExpand && (

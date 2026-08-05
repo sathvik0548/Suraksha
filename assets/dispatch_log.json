@@ -1,0 +1,22 @@
+[
+  {
+    "id": "DSP-5505AE",
+    "unitId": "UNIT-MDP-402",
+    "unitName": "MADANAPALLE PATROL 402",
+    "incidentId": "INC-MDP-8812",
+    "incidentTitle": "VEHICLE ACCIDENT DETECTED",
+    "location": "Sector 1 - MITS College Junction",
+    "timestamp": "2026-08-05 08:00:37 IST",
+    "status": "DISPATCHED"
+  },
+  {
+    "id": "DSP-101",
+    "unitId": "UNIT-MDP-109",
+    "unitName": "RTC BUS STAND TACTICAL 109",
+    "incidentId": "INC-MDP-8812",
+    "incidentTitle": "VEHICLE ACCIDENT & IMPACT DETECTED",
+    "location": "Sector 1 - MITS College Junction",
+    "timestamp": "2026-08-05 08:00:37 IST",
+    "status": "DISPATCHED"
+  }
+]

@@ -4,6 +4,7 @@ import { CameraMap } from '../common/CameraMap';
 import { BrainPanel } from '../common/BrainPanel';
 import { CctvPlayer } from '../common/CctvPlayer';
 import { CameraDetailsModal } from '../modals/CameraDetailsModal';
+import { EditCameraModal } from '../modals/EditCameraModal';
 import { AnalyzeVideoModal } from '../modals/AnalyzeVideoModal';
 import { useVideoAnalysis } from '../../hooks/useVideoAnalysis';
 import { useRealTimeData } from '../../hooks/useRealTimeData';
@@ -31,6 +32,7 @@ export const CommandCenterView: React.FC<Props> = ({
   const [centerTab, setCenterTab] = useState<'cctv_grid' | 'map'>('cctv_grid');
   const [selectedIncident, setSelectedIncident] = useState<Incident>(incidents[0] || ({} as Incident));
   const [showCameraDetails, setShowCameraDetails] = useState<CameraData | null>(null);
+  const [showEditCamera, setShowEditCamera] = useState<CameraData | null>(null);
   const [showAnalyzeModal, setShowAnalyzeModal] = useState(false);
 
   // Video analysis hook
@@ -77,7 +79,7 @@ export const CommandCenterView: React.FC<Props> = ({
             <i className="fa-solid fa-truck-medical text-emerald-400 text-base"></i>
             <div>
               <div className="text-[9px] text-slate-400 uppercase tracking-widest font-bold">ACTIVE UNITS</div>
-              <div className="text-emerald-400 font-bold text-sm">{units.length || 12} FLEET</div>
+              <div className="text-emerald-400 font-bold text-sm">{units.length} FLEET</div>
             </div>
           </div>
 
@@ -101,60 +103,62 @@ export const CommandCenterView: React.FC<Props> = ({
         </button>
       </div>
 
-      {/* Main Grid Area */}
-      <div className="flex-1 grid grid-cols-12 overflow-hidden p-2 gap-2">
-        {/* Left Column: Critical Alerts Feed */}
+      {/* Main Grid: Critical Alerts Feed + Main Player/Map + Brain */}
+      <div className="flex-1 grid grid-cols-12 gap-3 p-3 min-h-0 overflow-hidden">
+        {/* Left Column: Critical Alerts Feed (Sorted by Severity/Recency) */}
         <aside className="col-span-12 lg:col-span-3 flex flex-col bg-slate-900/80 border border-white/10 rounded-lg overflow-hidden shadow-xl">
           <div className="p-3 bg-slate-900 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-bold font-mono text-slate-200">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
               <span className="text-red-400 uppercase tracking-wider">CRITICAL ALERTS FEED</span>
             </div>
-            <span className="text-[10px] font-mono text-blue-400 bg-blue-950 border border-blue-500/30 px-2 py-0.5 rounded">
-              LIVE SYNC
+            <span className="text-[10px] font-mono text-blue-400 bg-blue-950 border border-blue-500/30 px-2 py-0.5 rounded font-bold">
+              {incidents.length} LIVE
             </span>
           </div>
 
           <div className="flex-1 overflow-y-auto p-2 space-y-2">
-            {incidents.map((inc) => (
-              <div
-                key={inc.id}
-                onClick={() => {
-                  setSelectedIncident(inc);
-                  onSelectIncident(inc);
-                }}
-                className={`p-3 rounded-lg border transition-all cursor-pointer relative group ${
-                  selectedIncident.id === inc.id
-                    ? 'bg-red-950/40 border-red-500 shadow-md shadow-red-900/30'
-                    : 'bg-slate-950/60 border-white/5 hover:border-red-500/50 hover:bg-slate-900'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1 font-mono text-[10px]">
-                  <span className="text-red-400 font-bold uppercase truncate max-w-[170px]">
-                    #{inc.id} - {inc.title}
-                  </span>
-                  <span className="text-slate-500 text-[9px]">LIVE</span>
-                </div>
+            {[...incidents]
+              .sort((a, b) => (b.severity || 0) - (a.severity || 0))
+              .map((inc) => (
+                <div
+                  key={inc.id}
+                  onClick={() => {
+                    setSelectedIncident(inc);
+                    onSelectIncident(inc);
+                  }}
+                  className={`p-3 rounded-lg border transition-all cursor-pointer relative group ${
+                    selectedIncident.id === inc.id
+                      ? 'bg-red-950/40 border-red-500 shadow-md shadow-red-900/30'
+                      : 'bg-slate-950/60 border-white/5 hover:border-red-500/50 hover:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1 font-mono text-[10px]">
+                    <span className="text-red-400 font-bold uppercase truncate max-w-[170px]">
+                      #{inc.id} - {inc.title}
+                    </span>
+                    <span className="text-slate-500 text-[9px] font-bold">LIVE</span>
+                  </div>
 
-                <div className="text-xs font-bold text-white mb-2 truncate">{inc.location}</div>
+                  <div className="text-xs font-bold text-white mb-2 truncate">{inc.location}</div>
 
-                <div className="flex items-center justify-between font-mono">
-                  <span className="px-2 py-0.5 bg-red-600 text-white font-bold text-[10px] rounded shadow-red-900/50 shadow">
-                    {inc.severity.toFixed(1)} SEVERITY
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelectIncident(inc);
-                      onNavigate('investigation');
-                    }}
-                    className="text-[10px] text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1"
-                  >
-                    <i className="fa-solid fa-microscope text-[9px]"></i> Investigate
-                  </button>
+                  <div className="flex items-center justify-between font-mono">
+                    <span className="px-2 py-0.5 bg-red-600 text-white font-bold text-[10px] rounded shadow-red-900/50 shadow">
+                      {typeof inc.severity === 'number' ? inc.severity.toFixed(1) : inc.severity} SEVERITY
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectIncident(inc);
+                        onNavigate('investigation');
+                      }}
+                      className="text-[10px] text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1"
+                    >
+                      <i className="fa-solid fa-microscope text-[9px]"></i> Investigate
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
 
           <div className="p-2 border-t border-white/10 bg-slate-900">
@@ -200,19 +204,71 @@ export const CommandCenterView: React.FC<Props> = ({
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2 bg-black">
+          <div className="flex-1 overflow-y-auto p-3 bg-black space-y-4 font-mono">
             {centerTab === 'cctv_grid' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                {sortedCameras.map((camera) => (
-                  <div key={camera.id} className="h-48">
-                    <CctvPlayer
-                      camera={camera}
-                      onExpand={onExpandCamera}
-                      showAiOverlay={true}
-                    />
+              <>
+                {/* Top Featured Priority Threat Video (Highest Severity First) */}
+                {sortedCameras.length > 0 && (
+                  <div className="bg-red-950/30 border border-red-500/50 rounded-xl p-3 shadow-2xl relative">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                        <span className="text-xs font-bold text-red-400 uppercase tracking-wider">
+                          PRIORITY THREAT #1 — HIGHEST RISK SCORE VIDEO
+                        </span>
+                      </div>
+                      <span className="px-2.5 py-0.5 bg-red-600 text-white font-bold text-[10px] rounded shadow">
+                        SEVERITY: {sortedCameras[0].severity.toFixed(1)} / 10.0
+                      </span>
+                    </div>
+
+                    <div className="h-64 sm:h-72 bg-black rounded-lg overflow-hidden border border-red-500/30">
+                      <CctvPlayer
+                        camera={sortedCameras[0]}
+                        onExpand={onExpandCamera}
+                        onEdit={(cam) => setShowEditCamera(cam)}
+                        showAiOverlay={true}
+                      />
+                    </div>
                   </div>
-                ))}
-              </div>
+                )}
+
+                {/* Section Divider Header */}
+                <div className="flex items-center justify-between border-b border-white/10 pb-2 pt-1">
+                  <div className="flex items-center gap-2">
+                    <i className="fa-solid fa-list-ol text-blue-400 text-xs"></i>
+                    <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                      ALL 19 CCTV STREAMS (PRIORITY ORDERED BY THREAT LEVEL)
+                    </h3>
+                  </div>
+                  <span className="text-[10px] text-slate-400">{sortedCameras.length} Video Feeds</span>
+                </div>
+
+                {/* All 19 Video Feeds Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {sortedCameras.map((camera, index) => (
+                    <div key={camera.id} className="h-52 relative group border border-white/10 rounded-lg overflow-hidden bg-slate-900">
+                      <div className="absolute top-2 left-2 z-30 pointer-events-none">
+                        <span className={`px-2 py-0.5 text-[9px] font-bold rounded shadow ${
+                          index === 0
+                            ? 'bg-red-600 text-white animate-pulse'
+                            : index < 3
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-blue-900 text-blue-200'
+                        }`}>
+                          #{index + 1} THREAT
+                        </span>
+                      </div>
+                      <CctvPlayer
+                        camera={camera}
+                        onExpand={onExpandCamera}
+                        onEdit={(cam) => setShowEditCamera(cam)}
+                        showAiOverlay={true}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </>
             ) : (
               <div className="h-full rounded-lg overflow-hidden border border-white/10">
                 <CameraMap
@@ -261,6 +317,17 @@ export const CommandCenterView: React.FC<Props> = ({
           camera={showCameraDetails}
           onClose={() => setShowCameraDetails(null)}
           onAnalyze={handleAnalyze}
+        />
+      )}
+
+      {showEditCamera && (
+        <EditCameraModal
+          camera={showEditCamera}
+          onCameraUpdated={() => {
+            dataService.refreshCameras();
+            setShowEditCamera(null);
+          }}
+          onClose={() => setShowEditCamera(null)}
         />
       )}
 

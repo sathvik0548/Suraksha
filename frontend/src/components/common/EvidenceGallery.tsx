@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { EvidenceItem } from '../../types';
+import { getApiUrl } from '../../utils/errorHandling';
 
 interface Props {
   evidence: EvidenceItem[];
@@ -12,7 +13,7 @@ export const EvidenceGallery: React.FC<Props> = ({ evidence, onDownload }) => {
 
   const handleImageClick = (evidence: EvidenceItem) => {
     setSelectedEvidence(evidence);
-    setFullscreenImage(`/api/v1/evidence/${evidence.id}/image`);
+    setFullscreenImage(getApiUrl(`/api/v1/evidence/${evidence.id}/image`));
   };
 
   const handleCloseFullscreen = () => {

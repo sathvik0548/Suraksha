@@ -61,10 +61,13 @@ export function useMultiRealTimeData<T>(endpoints: string[], interval: number = 
       await Promise.all(
         endpoints.map(async (endpoint) => {
           try {
-            const response = await fetch(endpoint);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const result = await response.json();
-            results[endpoint] = result;
+            const response = await safeFetch(endpoint);
+            if (response && response.ok) {
+              const result = await response.json();
+              results[endpoint] = result;
+            } else {
+              throw new Error(`HTTP error! status: ${response?.status}`);
+            }
           } catch (err) {
             errorResults[endpoint] = err instanceof Error ? err.message : 'Failed to fetch';
           }

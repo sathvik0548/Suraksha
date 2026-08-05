@@ -1,0 +1,12 @@
+[
+  {
+    "video_id": "INC-7CBAE7B6",
+    "incident_id": "INC-7CBAE7B6",
+    "status": "failed",
+    "severity": 1.0,
+    "title": "Live Verification Camera",
+    "location": "Sector 1 - Madanapalle",
+    "created_at": "2026-08-05T06:59:19.573140",
+    "thumbnail_path": "/api/v1/storage/videos/INC-7CBAE7B6/thumbnail.jpg"
+  }
+]

@@ -32,14 +32,14 @@ class ModelConfig:
     
     # YOLO11 Detection Model
     yolo_model_name: str = "yolo11m.pt"
-    yolo_confidence_threshold: float = 0.5
+    yolo_confidence_threshold: float = 0.45
     yolo_iou_threshold: float = 0.45
     yolo_device: str = "cpu"  # or "cuda" if GPU available
     
     # Tracking
     tracker_type: str = "bytetrack"
-    tracker_confidence_threshold: float = 0.5
-    tracker_iou_threshold: float = 0.3
+    tracker_confidence_threshold: float = 0.40
+    tracker_iou_threshold: float = 0.35
     max_track_age: int = 30  # frames
     
     # Classes to detect

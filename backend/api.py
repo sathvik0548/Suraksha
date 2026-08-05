@@ -782,3 +782,257 @@ async def get_storage_file(video_id: str, filename: str):
 @app.get("/api/v1/index")
 async def get_storage_index():
     return {"index": database.get_index()}
+
+
+@app.get("/api/v1/analytics")
+@app.get("/api/v1/statistics")
+async def get_analytics():
+    return frontend_integration.get_analytics_data()
+
+
+# ---------------------------------------------------------------------------
+# Camera Management Endpoints
+# ---------------------------------------------------------------------------
+
+def _load_cameras_file() -> List[dict]:
+    cam_file = config.paths.base_dir / "assets" / "cameras.json"
+    if not cam_file.exists():
+        cam_file = config.paths.base_dir / "frontend" / "public" / "assets" / "cameras.json"
+    if cam_file.exists():
+        try:
+            with open(cam_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Failed to load cameras.json: {e}")
+    return []
+
+def _save_cameras_file(cameras: List[dict]) -> None:
+    paths = [
+        config.paths.base_dir / "assets" / "cameras.json",
+        config.paths.base_dir / "frontend" / "public" / "assets" / "cameras.json"
+    ]
+    for p in paths:
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump(cameras, f, indent=2, ensure_ascii=False)
+            logger.info(f"Saved {len(cameras)} cameras to {p}")
+        except Exception as e:
+            logger.error(f"Failed to save cameras to {p}: {e}")
+
+@app.get("/api/cameras")
+async def get_cameras():
+    cameras = _load_cameras_file()
+    return cameras
+
+@app.get("/api/cameras/{camera_id}")
+async def get_camera_by_id(camera_id: str):
+    cameras = _load_cameras_file()
+    cam = next((c for c in cameras if c.get("camera_id") == camera_id or c.get("id") == camera_id), None)
+    if not cam:
+        raise HTTPException(status_code=404, detail=f"Camera {camera_id} not found")
+    return cam
+
+@app.post("/api/cameras")
+async def create_camera(payload: dict):
+    cameras = _load_cameras_file()
+    cam_id = payload.get("camera_id") or payload.get("id") or f"CAM-{uuid.uuid4().hex[:6].upper()}"
+    payload["camera_id"] = cam_id
+    payload["id"] = cam_id
+    cameras.insert(0, payload)
+    _save_cameras_file(cameras)
+    return {"message": "Camera created successfully", "camera": payload}
+
+@app.put("/api/cameras/{camera_id}")
+async def update_camera(camera_id: str, payload: dict):
+    cameras = _load_cameras_file()
+    idx = next((i for i, c in enumerate(cameras) if c.get("camera_id") == camera_id or c.get("id") == camera_id), None)
+    if idx is None:
+        # Create if missing
+        payload["camera_id"] = camera_id
+        payload["id"] = camera_id
+        cameras.append(payload)
+        _save_cameras_file(cameras)
+        return {"message": "Camera created", "camera": payload}
+
+    existing = cameras[idx]
+    # Update fields from payload
+    if "camera_name" in payload:
+        existing["camera_name"] = payload["camera_name"]
+        existing["name"] = payload["camera_name"]
+    if "name" in payload:
+        existing["camera_name"] = payload["name"]
+        existing["name"] = payload["name"]
+    if "location" in payload:
+        existing["location"] = payload["location"]
+        existing["zone"] = payload["location"]
+    if "latitude" in payload:
+        existing["latitude"] = float(payload["latitude"])
+        existing["lat"] = float(payload["latitude"])
+    if "lat" in payload:
+        existing["latitude"] = float(payload["lat"])
+        existing["lat"] = float(payload["lat"])
+    if "longitude" in payload:
+        existing["longitude"] = float(payload["longitude"])
+        existing["lng"] = float(payload["longitude"])
+    if "lng" in payload:
+        existing["longitude"] = float(payload["lng"])
+        existing["lng"] = float(payload["lng"])
+    if "status" in payload:
+        existing["status"] = payload["status"]
+    if "risk_level" in payload:
+        existing["risk_level"] = payload["risk_level"]
+    if "video_source" in payload:
+        existing["video_source"] = payload["video_source"]
+        existing["videoUrl"] = payload["video_source"]
+    if "videoUrl" in payload:
+        existing["video_source"] = payload["videoUrl"]
+        existing["videoUrl"] = payload["videoUrl"]
+
+    cameras[idx] = existing
+    _save_cameras_file(cameras)
+    return {"message": "Camera updated successfully", "camera": existing}
+
+
+# ---------------------------------------------------------------------------
+# Patrol Unit Management Endpoints
+# ---------------------------------------------------------------------------
+
+def _load_units_file() -> List[dict]:
+    u_file = config.paths.base_dir / "assets" / "patrol_units.json"
+    if not u_file.exists():
+        u_file = config.paths.base_dir / "frontend" / "public" / "assets" / "patrol_units.json"
+    if u_file.exists():
+        try:
+            with open(u_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Failed to load patrol_units.json: {e}")
+    return []
+
+def _save_units_file(units: List[dict]) -> None:
+    paths = [
+        config.paths.base_dir / "assets" / "patrol_units.json",
+        config.paths.base_dir / "frontend" / "public" / "assets" / "patrol_units.json"
+    ]
+    for p in paths:
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump(units, f, indent=2, ensure_ascii=False)
+            logger.info(f"Saved {len(units)} patrol units to {p}")
+        except Exception as e:
+            logger.error(f"Failed to save units to {p}: {e}")
+
+@app.get("/api/v1/patrol-units")
+async def get_patrol_units():
+    units = _load_units_file()
+    return units
+
+@app.post("/api/v1/patrol-units")
+async def create_patrol_unit(payload: dict):
+    units = _load_units_file()
+    unit_id = payload.get("id") or f"UNIT-MDP-{uuid.uuid4().hex[:3].upper()}"
+    payload["id"] = unit_id
+    if "officers" not in payload or not isinstance(payload["officers"], list):
+        payload["officers"] = ["Officer Active"]
+    if "statusColor" not in payload:
+        status_colors = {"DISPATCHED": "danger", "PATROLLING": "success", "AIRBORNE": "info", "ON_SCENE": "warning"}
+        payload["statusColor"] = status_colors.get(payload.get("status", "PATROLLING"), "info")
+
+    units.insert(0, payload)
+    _save_units_file(units)
+    return {"message": "Patrol unit created", "unit": payload}
+
+@app.put("/api/v1/patrol-units/{unit_id}")
+async def update_patrol_unit(unit_id: str, payload: dict):
+    units = _load_units_file()
+    idx = next((i for i, u in enumerate(units) if u.get("id") == unit_id), None)
+    if idx is None:
+        payload["id"] = unit_id
+        units.append(payload)
+        _save_units_file(units)
+        return {"message": "Patrol unit created", "unit": payload}
+
+    existing = units[idx]
+    existing.update(payload)
+    if "status" in payload:
+        status_colors = {"DISPATCHED": "danger", "PATROLLING": "success", "AIRBORNE": "info", "ON_SCENE": "warning"}
+        existing["statusColor"] = status_colors.get(payload["status"], existing.get("statusColor", "info"))
+
+    units[idx] = existing
+    _save_units_file(units)
+    return {"message": "Patrol unit updated", "unit": existing}
+
+
+# ---------------------------------------------------------------------------
+# Dispatch Log Endpoints
+# ---------------------------------------------------------------------------
+
+def _load_dispatch_log() -> List[dict]:
+    d_file = config.paths.base_dir / "assets" / "dispatch_log.json"
+    if d_file.exists():
+        try:
+            with open(d_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Failed to load dispatch_log.json: {e}")
+    return [
+        {
+            "id": "DSP-101",
+            "unitId": "UNIT-MDP-109",
+            "unitName": "RTC BUS STAND TACTICAL 109",
+            "incidentId": "INC-MDP-8812",
+            "incidentTitle": "VEHICLE ACCIDENT & IMPACT DETECTED",
+            "location": "Sector 1 - MITS College Junction",
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S IST"),
+            "status": "DISPATCHED"
+        }
+    ]
+
+def _save_dispatch_log(logs: List[dict]) -> None:
+    paths = [
+        config.paths.base_dir / "assets" / "dispatch_log.json",
+        config.paths.base_dir / "frontend" / "public" / "assets" / "dispatch_log.json"
+    ]
+    for p in paths:
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump(logs, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            logger.error(f"Failed to save dispatch log to {p}: {e}")
+
+@app.get("/api/v1/dispatch")
+@app.get("/api/v1/dispatch/log")
+async def get_dispatch_logs():
+    return _load_dispatch_log()
+
+@app.post("/api/v1/dispatch")
+async def record_dispatch(payload: dict):
+    logs = _load_dispatch_log()
+    now_ist = datetime.now().strftime("%Y-%m-%d %H:%M:%S IST")
+    entry = {
+        "id": f"DSP-{uuid.uuid4().hex[:6].upper()}",
+        "unitId": payload.get("unitId", "UNIT-MDP-402"),
+        "unitName": payload.get("unitName", "MADANAPALLE PATROL 402"),
+        "incidentId": payload.get("incidentId", "INC-MDP-8812"),
+        "incidentTitle": payload.get("incidentTitle", "HIGH IMPACT INCIDENT"),
+        "location": payload.get("location", "Sector 1 - Madanapalle Zone"),
+        "timestamp": payload.get("timestamp", now_ist),
+        "status": "DISPATCHED"
+    }
+    logs.insert(0, entry)
+    _save_dispatch_log(logs)
+
+    # Update unit status
+    units = _load_units_file()
+    idx = next((i for i, u in enumerate(units) if u.get("id") == payload.get("unitId")), None)
+    if idx is not None:
+        units[idx]["status"] = "DISPATCHED"
+        units[idx]["statusColor"] = "danger"
+        _save_units_file(units)
+
+    return {"message": "Dispatch order recorded successfully", "dispatch": entry}
+
+

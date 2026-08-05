@@ -10,7 +10,7 @@ interface Props {
 export const Sidebar: React.FC<Props> = ({ currentView, onNavigate, activeCriticalAlertsCount = 3 }) => {
   const navItems: Array<{ id: ViewType; label: string; icon: string; badge?: number }> = [
     { id: 'command_center', label: 'Command Center', icon: 'fa-gauge-high' },
-    { id: 'live_cameras', label: 'Live CCTV (6 Cameras)', icon: 'fa-video' },
+    { id: 'live_cameras', label: 'Live CCTV Catalog', icon: 'fa-video' },
     { id: 'investigation', label: 'Incident Investigation', icon: 'fa-fingerprint', badge: activeCriticalAlertsCount },
     { id: 'analytics', label: 'Threat Analytics', icon: 'fa-chart-area' },
     { id: 'fleet_units', label: 'Patrol & Unit Dispatch', icon: 'fa-truck-medical' },
@@ -25,7 +25,7 @@ export const Sidebar: React.FC<Props> = ({ currentView, onNavigate, activeCritic
           <h2 className="text-[10px] uppercase tracking-[0.2em] font-bold text-blue-400 font-mono flex items-center gap-1.5">
             <i className="fa-solid fa-bars-staggered text-blue-400 text-[10px]"></i> SURAKSHA NAV
           </h2>
-          <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold">V8.4</span>
+          <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold">V1.0</span>
         </div>
       </div>
 
@@ -58,17 +58,6 @@ export const Sidebar: React.FC<Props> = ({ currentView, onNavigate, activeCritic
             </button>
           );
         })}
-      </div>
-
-      {/* Emergency Hotline Banner Footer */}
-      <div className="p-3 border-t border-white/10 bg-black/60 hidden lg:block">
-        <div className="p-2.5 bg-red-950/30 border border-red-500/30 rounded-lg">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
-            <span className="text-[10px] font-bold text-red-400 font-mono uppercase">HOTLINE RED-1 LOCK</span>
-          </div>
-          <div className="text-[10px] text-slate-400 font-mono">Direct dispatch radio channel encrypted.</div>
-        </div>
       </div>
     </aside>
   );

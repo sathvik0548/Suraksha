@@ -49,6 +49,39 @@ export const BoundingBoxOverlay: React.FC<Props> = ({
       ctx.lineTo(width, scanLineY);
       ctx.stroke();
 
+      // Render combined impact area if multiple high-threat or collision objects exist
+      if (detections.length >= 2) {
+        let minX = width, minY = height, maxX = 0, maxY = 0;
+        detections.forEach((b) => {
+          const bx = (b.x / 100) * width;
+          const by = (b.y / 100) * height;
+          const bw = (b.w / 100) * width;
+          const bh = (b.h / 100) * height;
+          minX = Math.min(minX, bx);
+          minY = Math.min(minY, by);
+          maxX = Math.max(maxX, bx + bw);
+          maxY = Math.max(maxY, by + bh);
+        });
+
+        // Add 8px padding around impact area
+        minX = Math.max(0, minX - 8);
+        minY = Math.max(0, minY - 8);
+        maxX = Math.min(width, maxX + 8);
+        maxY = Math.min(height, maxY + 8);
+
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+        ctx.setLineDash([]); // Reset dash
+
+        ctx.font = 'bold 9px "JetBrains Mono", monospace';
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
+        ctx.fillRect(minX, minY - 14, 110, 14);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('IMPACT THREAT ZONE', minX + 4, minY - 3);
+      }
+
       // Render detection bounding boxes
       detections.forEach((box) => {
         const bx = (box.x / 100) * width;

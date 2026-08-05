@@ -213,7 +213,7 @@ export default function App() {
     setCurrentView('landing');
   };
 
-  const handleConfirmDispatch = (unitId: string, incidentId: string) => {
+  const handleConfirmDispatch = async (unitId: string, incidentId: string) => {
     setIncidents((prev) =>
       prev.map((inc) =>
         inc.id === incidentId
@@ -221,6 +221,22 @@ export default function App() {
           : inc
       )
     );
+
+    try {
+      const inc = incidents.find((i) => i.id === incidentId);
+      await safeFetch('/api/v1/dispatch', {
+        method: 'POST',
+        body: JSON.stringify({
+          unitId,
+          unitName: unitId,
+          incidentId,
+          incidentTitle: inc?.title || 'HIGH THREAT DISPATCH',
+          location: inc?.location || 'Madanapalle Sector'
+        })
+      });
+    } catch (err) {
+      console.warn('Failed to record dispatch in backend:', err);
+    }
   };
 
   // Task 6: Render LandingPage full-bleed standalone when on landing view or not authenticated
@@ -258,6 +274,7 @@ export default function App() {
         {/* Main Top Header */}
         <Navbar
           currentView={currentView}
+          cameraCount={cameras.length}
           onNavigate={(view) => setCurrentView(view)}
           onQuickDispatch={() => setIsDispatchModalOpen(true)}
           onLogout={handleLogout}

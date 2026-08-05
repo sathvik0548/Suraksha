@@ -93,50 +93,54 @@ const defaultCamerasList: CameraData[] = [
   }
 ];
 
-function transformBackendToCamera(backend: BackendCamera): CameraData {
+function transformBackendToCamera(backend: any): CameraData {
   const riskLevel = backend.risk_level;
-  let aiStatus = 'AI_ACTIVE';
-  let aiStatusType: 'danger' | 'warning' | 'info' | 'success' = 'success';
-  let severity = 1.0;
+  let aiStatus = backend.aiStatus || 'AI_ACTIVE';
+  let aiStatusType: 'danger' | 'warning' | 'info' | 'success' = backend.aiStatusType || 'success';
+  let severity = backend.severity || 1.0;
 
-  if (riskLevel === 'CRITICAL') {
-    aiStatus = 'CRITICAL AI ALERT';
-    aiStatusType = 'danger';
-    severity = 9.0;
-  } else if (riskLevel === 'HIGH') {
-    aiStatus = 'HIGH THREAT DETECTED';
-    aiStatusType = 'warning';
-    severity = 7.0;
-  } else if (riskLevel === 'MEDIUM') {
-    aiStatus = 'MONITORING';
-    aiStatusType = 'info';
-    severity = 5.0;
-  } else {
-    aiStatus = 'NORMAL';
-    aiStatusType = 'success';
-    severity = 3.0;
+  if (!backend.aiStatus) {
+    if (riskLevel === 'CRITICAL') {
+      aiStatus = 'CRITICAL AI ALERT';
+      aiStatusType = 'danger';
+      severity = severity || 9.0;
+    } else if (riskLevel === 'HIGH') {
+      aiStatus = 'HIGH THREAT DETECTED';
+      aiStatusType = 'warning';
+      severity = severity || 7.0;
+    } else if (riskLevel === 'MEDIUM') {
+      aiStatus = 'MONITORING';
+      aiStatusType = 'info';
+      severity = severity || 5.0;
+    } else {
+      aiStatus = 'NORMAL';
+      aiStatusType = 'success';
+      severity = severity || 3.0;
+    }
   }
 
   return {
-    id: backend.camera_id,
-    name: backend.camera_name,
-    location: `${backend.zone} - ${backend.city}, ${backend.state}`,
-    status: backend.status === 'ONLINE' ? 'REC' : 'OFFLINE',
-    fps: '30.0 FPS',
-    resolution: '1080p FHD',
+    id: backend.camera_id || backend.id,
+    camera_id: backend.camera_id || backend.id,
+    name: backend.camera_name || backend.name,
+    location: backend.location || (backend.zone ? `${backend.zone} - ${backend.city}, ${backend.state}` : 'Madanapalle, AP'),
+    status: backend.status === 'ONLINE' ? 'REC' : (backend.status || 'REC'),
+    fps: backend.fps || '30.0 FPS',
+    resolution: backend.resolution || '1080p FHD',
     aiStatus,
     aiStatusType,
     severity,
-    lat: backend.latitude || 13.6288,
-    lng: backend.longitude || 78.4746,
-    videoUrl: backend.video_source || '/assets/videos/accident/accident_001.mp4',
-    detections: [],
-    aiMetrics: {
+    lat: backend.latitude || backend.lat || 13.6288,
+    lng: backend.longitude || backend.lng || 78.4746,
+    videoUrl: backend.video_source || backend.videoUrl || '/assets/videos/accident/accident_001.mp4',
+    thumbnailUrl: backend.thumbnailUrl,
+    detections: backend.detections || [],
+    aiMetrics: backend.aiMetrics || {
       weapon: false,
       weaponConfidence: 0,
       fight: false,
       fightConfidence: 0,
-      people: 1,
+      people: (backend.detections || []).filter((d: any) => d.type === 'person').length,
       blood: false,
       severity,
       trackingIDs: [],
@@ -218,11 +222,37 @@ class DataService {
     this.notifyListeners();
   }
 
-  public updateCamera(updatedCam: CameraData) {
+  public async updateCamera(updatedCam: CameraData) {
     const idx = this.cameras.findIndex((c) => c.id === updatedCam.id);
     if (idx !== -1) {
       this.cameras[idx] = { ...this.cameras[idx], ...updatedCam };
       this.notifyListeners();
+    }
+
+    try {
+      await safeFetch(`/api/cameras/${updatedCam.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          camera_id: updatedCam.id,
+          id: updatedCam.id,
+          camera_name: updatedCam.name,
+          name: updatedCam.name,
+          location: updatedCam.location,
+          latitude: updatedCam.lat,
+          lat: updatedCam.lat,
+          longitude: updatedCam.lng,
+          lng: updatedCam.lng,
+          status: updatedCam.status === 'REC' ? 'ONLINE' : 'OFFLINE',
+          video_source: updatedCam.videoUrl,
+          videoUrl: updatedCam.videoUrl,
+          thumbnailUrl: updatedCam.thumbnailUrl,
+          severity: updatedCam.severity,
+          detections: updatedCam.detections,
+          aiMetrics: updatedCam.aiMetrics
+        })
+      });
+    } catch (err) {
+      console.warn('Failed to persist updated camera to backend /api/cameras:', err);
     }
   }
 
