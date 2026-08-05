@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Incident, CameraData, EvidenceItem } from '../../types';
-import { useRealTimeData } from '../../hooks/useRealTimeData';
+import { safeFetch, getApiUrl } from '../../utils/errorHandling';
 
 interface Props {
   incident?: Incident | null;
@@ -15,65 +15,84 @@ export const InvestigationView: React.FC<Props> = ({
   onOpenPrintReport,
   onCloseIncident,
 }) => {
-  // Default incident fallback if none passed
   const activeIncident: Incident = incident || {
-    id: 'INC-8812',
-    title: 'PHYSICAL ALTERCATION DETECTED',
-    location: 'Subway Platform - Zone 4',
-    cameraId: 'CAM-001',
+    id: 'INC-MDP-8812',
+    title: 'VEHICLE ACCIDENT & IMPACT DETECTED',
+    location: 'MITS College Junction - Sector 1, Madanapalle',
+    cameraId: 'CAM-MDP-01',
     severity: 9.3,
     status: 'Active',
     timestamp: '23:41:02 UTC',
-    description: 'High threat physical violent altercation detected by Sentinel AI YOLO vision model.',
-    detectedObjects: ['person (3)', 'backpack (1)'],
+    description: 'High impact vehicle collision detected near MITS Engineering College entrance by Sentinel YOLO vision model.',
+    detectedObjects: ['car (2)', 'person (3)'],
     aiConfidence: 98.4,
+    lat: 13.6288,
+    lng: 78.4746,
     aiAnalysis: {
-      weapon: true,
-      weaponConfidence: 95.2,
-      fight: true,
-      fightConfidence: 92.0,
-      people: 3,
-      blood: false,
-      severity: 9.3,
-      trackingIDs: ['TRK-104', 'TRK-105']
+      weapon: false, weaponConfidence: 0, fight: true, fightConfidence: 94,
+      people: 3, blood: false, severity: 9.3, trackingIDs: [101, 102]
     }
   };
 
   const [policeNotes, setPoliceNotes] = useState(activeIncident.policeNotes || '');
-  const [volunteerNotes, setVolunteerNotes] = useState(activeIncident.volunteerNotes || '');
   const [savedSuccess, setSavedSuccess] = useState(false);
-  const [annotatedVideoUrl, setAnnotatedVideoUrl] = useState<string | null>(null);
-  const [timelineData, setTimelineData] = useState<any>(null);
-  const [reasoningData, setReasoningData] = useState<any>(null);
-  const [severityData, setSeverityData] = useState<any>(null);
-  const [evidenceData, setEvidenceData] = useState<EvidenceItem[]>([]);
+  const [annotatedVideoUrl, setAnnotatedVideoUrl] = useState<string>(getApiUrl(`/api/v1/annotated-video?video_id=${activeIncident.id}`));
+  const [originalVideoUrl, setOriginalVideoUrl] = useState<string>(getApiUrl(`/api/v1/storage/videos/${activeIncident.id}/original.mp4`));
+  const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
+  const [reasoningText, setReasoningText] = useState<string>('');
+  const [severityScore, setSeverityScore] = useState<number>(activeIncident.severity);
 
-  // Fetch real-time data from backend
-  const { data: backendTimeline, loading: timelineLoading } = useRealTimeData<any>({ 
-    endpoint: '/api/v1/timeline/latest', 
-    interval: 5000 
-  });
-  const { data: backendReasoning, loading: reasoningLoading } = useRealTimeData<any>({ 
-    endpoint: '/api/v1/reasoning/latest', 
-    interval: 5000 
-  });
-  const { data: backendSeverity, loading: severityLoading } = useRealTimeData<any>({ 
-    endpoint: '/api/v1/severity/latest', 
-    interval: 5000 
-  });
-  const { data: backendEvidence, loading: evidenceLoading } = useRealTimeData<any>({ 
-    endpoint: '/api/v1/evidence', 
-    interval: 5000 
-  });
-
-  // Update state when backend data changes
   useEffect(() => {
-    if (backendTimeline?.timeline) setTimelineData(backendTimeline.timeline);
-    if (backendReasoning) setReasoningData(backendReasoning);
-    if (backendSeverity) setSeverityData(backendSeverity);
-    if (backendEvidence?.evidence) setEvidenceData(backendEvidence.evidence);
-    setAnnotatedVideoUrl('/api/v1/annotated-video');
-  }, [backendTimeline, backendReasoning, backendSeverity, backendEvidence]);
+    const fetchIncidentDetails = async () => {
+      const vid = activeIncident.id;
+      setAnnotatedVideoUrl(getApiUrl(`/api/v1/annotated-video?video_id=${vid}`));
+      setOriginalVideoUrl(getApiUrl(`/api/v1/storage/videos/${vid}/original.mp4`));
+
+      try {
+        // Fetch timeline for this specific video
+        const tlRes = await safeFetch(`/api/v1/timeline/latest?video_id=${vid}`);
+        if (tlRes.ok) {
+          const tlData = await tlRes.json();
+          if (tlData?.timeline?.events) {
+            setTimelineEvents(tlData.timeline.events);
+          }
+        }
+      } catch (e) {
+        // Fallback to incident description timeline
+        setTimelineEvents([
+          { time: activeIncident.timestamp || '00:00:00', event: 'Video Analyzed', details: activeIncident.description || 'YOLO11 scan completed.', type: 'danger' }
+        ]);
+      }
+
+      try {
+        // Fetch reasoning for this specific video
+        const rRes = await safeFetch(`/api/v1/reasoning/latest?video_id=${vid}`);
+        if (rRes.ok) {
+          const rData = await rRes.json();
+          if (rData?.reasoning) {
+            setReasoningText(rData.reasoning);
+          }
+        }
+      } catch (e) {
+        setReasoningText(activeIncident.description || 'Continuous YOLO11 vision analysis completed for this video feed.');
+      }
+
+      try {
+        // Fetch severity for this specific video
+        const sRes = await safeFetch(`/api/v1/severity/latest?video_id=${vid}`);
+        if (sRes.ok) {
+          const sData = await sRes.json();
+          if (sData?.severity) {
+            setSeverityScore(sData.severity);
+          }
+        }
+      } catch (e) {
+        setSeverityScore(activeIncident.severity);
+      }
+    };
+
+    fetchIncidentDetails();
+  }, [activeIncident.id]);
 
   const handleSaveNotes = () => {
     setSavedSuccess(true);
@@ -90,58 +109,52 @@ export const InvestigationView: React.FC<Props> = ({
     downloadAnchor.remove();
   };
 
-  // Default camera fallback if none passed
   const activeCamera: CameraData = camera || {
-    id: activeIncident.cameraId || 'CAM-01',
+    id: activeIncident.cameraId || 'CAM-MDP-01',
     name: activeIncident.location,
     location: activeIncident.location,
     status: 'REC',
-    fps: '30.1 FPS',
-    resolution: '4K UHD',
+    fps: '30.0 FPS',
+    resolution: '1080p FHD',
     aiStatus: 'INVESTIGATION MODE',
     aiStatusType: 'danger',
     severity: activeIncident.severity,
-    lat: activeIncident.lat,
-    lng: activeIncident.lng,
-    videoUrl: '/assets/videos/subway/Subway.mp4',
+    lat: activeIncident.lat || 13.6288,
+    lng: activeIncident.lng || 78.4746,
+    videoUrl: '/assets/videos/accident/accident_001.mp4',
     detections: [],
     aiMetrics: activeIncident.aiAnalysis,
   };
 
-  // Timeline Events - Use backend data if available
-  const timelineEvents = timelineData?.events || [
-    { time: '11:22:05 AM', event: 'Subject Entered Entrance Gate', details: 'Subject TRK_1042 logged at North Entrance turnstiles.' },
-    { time: '11:23:14 AM', event: 'Verbal Dispute Detected', details: 'Acoustic sensor flagged elevated decibels (88 dB).' },
-    { time: '11:24:02 AM', event: 'Weapon Signature locked', details: 'Neural Model locked metallic firearm profile (95.2%).' },
-    { time: '11:24:15 AM', event: 'Unit 402 Dispatched', details: 'Direct siren order transmitted to Officer Henderson.' },
-  ];
-
   return (
-    <div className="flex-1 flex flex-col bg-slate-900 text-white overflow-hidden font-sans">
+    <div className="flex-1 flex flex-col bg-slate-950 text-white overflow-hidden font-sans select-none">
       {/* Header */}
-      <div className="px-6 py-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
+      <div className="px-6 py-4 bg-slate-900 border-b border-white/10 flex items-center justify-between font-mono">
         <div>
-          <h2 className="text-lg font-bold text-white">Investigation: {activeIncident.id}</h2>
-          <p className="text-sm text-slate-400">{activeIncident.title}</p>
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <i className="fa-solid fa-microscope text-blue-400 text-sm"></i>
+            Forensic Workspace: {activeIncident.id}
+          </h2>
+          <p className="text-xs text-slate-400">{activeIncident.title} - {activeIncident.location}</p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={handleDownloadEvidence}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-bold uppercase transition-colors flex items-center gap-1.5"
           >
-            Download Evidence
+            <i className="fa-solid fa-download"></i> Export Evidence JSON
           </button>
           <button
             onClick={onOpenPrintReport}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold uppercase transition-colors flex items-center gap-1.5"
           >
-            Print Report
+            <i className="fa-solid fa-print"></i> Generate Official Report
           </button>
           <button
             onClick={onCloseIncident}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors"
+            className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-bold uppercase transition-colors"
           >
-            Close
+            Back to Grid
           </button>
         </div>
       </div>
@@ -149,111 +162,137 @@ export const InvestigationView: React.FC<Props> = ({
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column: Videos */}
+          {/* Left Column: Video Streams */}
           <div className="space-y-6">
-            {/* Original Video */}
-            <div className="bg-slate-800 rounded-lg p-4">
-              <h3 className="text-md font-bold text-white mb-3">Original Video Feed</h3>
-              <div className="aspect-video bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
+            {/* Original Footage */}
+            <div className="bg-slate-900/80 border border-white/10 rounded-xl p-4 shadow-xl">
+              <div className="flex items-center justify-between mb-3 font-mono">
+                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                  <i className="fa-solid fa-video text-blue-400"></i> Original Input Video Stream
+                </h3>
+                <span className="text-[10px] text-slate-400">RAW FEED</span>
+              </div>
+              <div className="aspect-video bg-black rounded-lg overflow-hidden border border-white/10 relative">
                 <video
-                  src={activeCamera.videoUrl}
+                  src={originalVideoUrl}
                   controls
                   autoPlay
                   loop
                   muted
+                  playsInline
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLVideoElement).src = activeCamera.videoUrl;
+                  }}
                 />
               </div>
             </div>
 
-            {/* Annotated Video */}
-            {annotatedVideoUrl && (
-              <div className="bg-slate-800 rounded-lg p-4">
-                <h3 className="text-md font-bold text-white mb-3">YOLO11 AI Annotated Overlay Stream</h3>
-                <div className="aspect-video bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
-                  <video
-                    src={annotatedVideoUrl}
-                    controls
-                    autoPlay
-                    loop
-                    muted
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+            {/* YOLO11 AI Overlay Stream */}
+            <div className="bg-slate-900/80 border border-blue-500/30 rounded-xl p-4 shadow-xl">
+              <div className="flex items-center justify-between mb-3 font-mono">
+                <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+                  <i className="fa-solid fa-layer-group text-cyan-400"></i> YOLO11 AI Bounding Box Overlay Stream
+                </h3>
+                <span className="text-[10px] text-cyan-400 bg-cyan-950 border border-cyan-500/40 px-2 py-0.5 rounded font-bold">
+                  PROCESSED
+                </span>
               </div>
-            )}
+              <div className="aspect-video bg-black rounded-lg overflow-hidden border border-cyan-500/30 relative">
+                <video
+                  src={annotatedVideoUrl}
+                  controls
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLVideoElement).src = originalVideoUrl;
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Right Column: Analysis */}
+          {/* Right Column: Video Specific Analysis */}
           <div className="space-y-6">
-            {/* AI Analysis */}
-            <div className="bg-slate-800 rounded-lg p-4">
-              <h3 className="text-md font-bold text-white mb-3">AI Threat Assessment</h3>
-              <div className="space-y-3 font-mono">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Severity Index</span>
-                  <span className="text-2xl font-bold text-red-400">{activeIncident.severity.toFixed(1)} / 10.0</span>
+            {/* Threat Metrics */}
+            <div className="bg-slate-900/80 border border-white/10 rounded-xl p-4 shadow-xl">
+              <h3 className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider mb-4 border-b border-white/10 pb-2">
+                Video Analysis Threat Metrics
+              </h3>
+              <div className="grid grid-cols-2 gap-4 font-mono text-xs">
+                <div className="bg-slate-950 p-3 rounded-lg border border-white/5">
+                  <div className="text-[10px] text-slate-400 uppercase">Overall Severity Score</div>
+                  <div className="text-2xl font-bold text-red-400 mt-1">{severityScore.toFixed(1)} / 10.0</div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Weapon Detection</span>
-                  <span className={activeIncident.aiAnalysis?.weapon ? 'text-red-400 font-bold' : 'text-green-400 font-bold'}>
-                    {activeIncident.aiAnalysis?.weapon ? 'DETECTED' : 'CLEAR'}
-                  </span>
+                <div className="bg-slate-950 p-3 rounded-lg border border-white/5">
+                  <div className="text-[10px] text-slate-400 uppercase">Detection Objects Logged</div>
+                  <div className="text-2xl font-bold text-blue-400 mt-1">
+                    {activeIncident.detectedObjects?.length || 2}
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Weapon Confidence</span>
-                  <span className="text-white">{activeIncident.aiAnalysis?.weaponConfidence?.toFixed(1) || 95.2}%</span>
+                <div className="bg-slate-950 p-3 rounded-lg border border-white/5">
+                  <div className="text-[10px] text-slate-400 uppercase">Weapon Flag</div>
+                  <div className={`text-sm font-bold mt-1.5 ${activeIncident.aiAnalysis?.weapon ? 'text-red-400' : 'text-emerald-400'}`}>
+                    {activeIncident.aiAnalysis?.weapon ? 'WEAPON DETECTED' : 'CLEAR (NO WEAPON)'}
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">People Count</span>
-                  <span className="text-white">{activeIncident.aiAnalysis?.people || 3}</span>
+                <div className="bg-slate-950 p-3 rounded-lg border border-white/5">
+                  <div className="text-[10px] text-slate-400 uppercase">Model Precision Confidence</div>
+                  <div className="text-sm font-bold text-cyan-400 mt-1.5">
+                    {activeIncident.aiConfidence || 95.2}%
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Timeline */}
-            <div className="bg-slate-800 rounded-lg p-4">
-              <h3 className="text-md font-bold text-white mb-3">Chronological Event Timeline</h3>
-              {timelineLoading ? (
-                <p className="text-slate-400 font-mono text-sm">Syncing timeline...</p>
-              ) : (
-                <div className="space-y-3 font-mono text-xs">
-                  {timelineEvents.map((event: any, index: number) => (
-                    <div key={index} className="flex gap-3 bg-slate-900/60 p-2 rounded border border-white/5">
-                      <div className="w-24 text-blue-400 font-bold">{event.time}</div>
-                      <div className="flex-1">
-                        <div className="font-bold text-white">{event.event}</div>
-                        <div className="text-slate-400 text-[11px]">{event.details}</div>
-                      </div>
+            {/* Video-Derived Timeline */}
+            <div className="bg-slate-900/80 border border-white/10 rounded-xl p-4 shadow-xl">
+              <h3 className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider mb-3">
+                Chronological Event Timeline
+              </h3>
+              <div className="space-y-2.5 font-mono text-xs">
+                {timelineEvents.map((event: any, index: number) => (
+                  <div key={index} className="flex gap-3 bg-slate-950 p-2.5 rounded-lg border border-white/5">
+                    <div className="w-20 text-blue-400 font-bold shrink-0">{event.time || '00:00:00'}</div>
+                    <div className="flex-1">
+                      <div className="font-bold text-slate-200">{event.event || 'Frame Event'}</div>
+                      <div className="text-slate-400 text-[11px] mt-0.5">{event.details}</div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* AI Reasoning */}
-            <div className="bg-slate-800 rounded-lg p-4">
-              <h3 className="text-md font-bold text-white mb-3">Sentinel Reasoning Engine</h3>
-              <div className="text-xs text-slate-300 font-mono bg-slate-950 p-3 rounded-lg border border-white/10 leading-relaxed">
-                {reasoningData?.reasoning || 'Sentinel AI detected anomalous group movement and high-frequency metallic shapes matching weapons. Automated alert dispatched to sector units.'}
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Notes */}
-            <div className="bg-slate-800 rounded-lg p-4">
-              <h3 className="text-md font-bold text-white mb-3">Incident Commander Log Notes</h3>
+            {/* Video-Derived AI Reasoning */}
+            <div className="bg-slate-900/80 border border-white/10 rounded-xl p-4 shadow-xl">
+              <h3 className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider mb-3">
+                Sentinel AI Reasoning Summary
+              </h3>
+              <div className="text-xs text-slate-300 font-mono bg-slate-950 p-3.5 rounded-lg border border-white/10 leading-relaxed whitespace-pre-wrap">
+                {reasoningText || activeIncident.description || 'YOLO11 object detection and ByteTrack tracking analysis complete.'}
+              </div>
+            </div>
+
+            {/* Log Notes */}
+            <div className="bg-slate-900/80 border border-white/10 rounded-xl p-4 shadow-xl">
+              <h3 className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider mb-3">
+                Commander Field Notes
+              </h3>
               <textarea
                 value={policeNotes}
                 onChange={(e) => setPoliceNotes(e.target.value)}
-                rows={4}
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-blue-500 font-mono"
-                placeholder="Enter field operator notes..."
+                rows={3}
+                className="w-full bg-slate-950 border border-white/10 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
+                placeholder="Log notes for this specific video analysis..."
               />
               <button
                 onClick={handleSaveNotes}
-                className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition-colors"
+                className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-mono font-bold uppercase tracking-wider transition-colors"
               >
-                {savedSuccess ? 'Saved to System Log!' : 'Save Log Notes'}
+                {savedSuccess ? 'Saved to System Log!' : 'Save Notes'}
               </button>
             </div>
           </div>

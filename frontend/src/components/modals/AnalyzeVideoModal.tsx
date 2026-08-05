@@ -9,15 +9,15 @@ interface Props {
 
 export const AnalyzeVideoModal: React.FC<Props> = ({ onClose, onAnalysisComplete }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [cameraName, setCameraName] = useState('Custom Surveillance Feed');
-  const [location, setLocation] = useState('Sector 4 - Uploaded Video');
-  const [lat, setLat] = useState(40.7128);
-  const [lng, setLng] = useState(-74.0060);
+  const [cameraName, setCameraName] = useState('Madanapalle Custom CCTV Feed');
+  const [location, setLocation] = useState('Sector 1 - Madanapalle Command Zone');
+  const [lat, setLat] = useState(13.6288);
+  const [lng, setLng] = useState(78.4746);
   const [dragActive, setDragActive] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { isAnalyzing, progress, error: analysisError, analyzeVideo, reset } = useVideoAnalysis();
+  const { isAnalyzing, progress, error: analysisError, analyzeVideo } = useVideoAnalysis();
 
   const handleFileChange = (file: File | null) => {
     setValidationError(null);
@@ -72,7 +72,7 @@ export const AnalyzeVideoModal: React.FC<Props> = ({ onClose, onAnalysisComplete
     }
 
     const mockCamera: CameraData = {
-      id: `CAM-UPL-${Date.now().toString().slice(-4)}`,
+      id: `CAM-MDP-${Date.now().toString().slice(-4)}`,
       name: cameraName,
       location: location,
       status: 'REC',
@@ -108,7 +108,7 @@ export const AnalyzeVideoModal: React.FC<Props> = ({ onClose, onAnalysisComplete
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 font-sans select-none">
       <div className="bg-slate-900 border border-white/10 rounded-xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10">
@@ -117,7 +117,7 @@ export const AnalyzeVideoModal: React.FC<Props> = ({ onClose, onAnalysisComplete
               <i className="fa-solid fa-cloud-arrow-up text-blue-500"></i>
               Analyze Custom Video Feed
             </h2>
-            <p className="text-sm text-slate-400">Upload any CCTV or surveillance video file for YOLO11 AI processing</p>
+            <p className="text-xs text-slate-400 font-mono">Upload any video for real YOLO11 AI vision detection</p>
           </div>
           <button
             onClick={onClose}
@@ -129,10 +129,10 @@ export const AnalyzeVideoModal: React.FC<Props> = ({ onClose, onAnalysisComplete
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 font-mono">
           {/* File Drag and Drop Dropzone */}
           <div>
-            <label className="block text-xs text-slate-400 font-mono uppercase mb-2">Video File</label>
+            <label className="block text-xs text-slate-400 uppercase mb-2 font-bold">Video File</label>
             <div
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -144,7 +144,7 @@ export const AnalyzeVideoModal: React.FC<Props> = ({ onClose, onAnalysisComplete
                   ? 'border-blue-500 bg-blue-500/10'
                   : selectedFile
                   ? 'border-emerald-500/50 bg-emerald-950/20'
-                  : 'border-white/20 bg-slate-800/50 hover:border-blue-400 hover:bg-slate-800'
+                  : 'border-white/20 bg-slate-950 hover:border-blue-400 hover:bg-slate-800'
               } ${isAnalyzing ? 'pointer-events-none opacity-60' : ''}`}
             >
               <input
@@ -159,8 +159,8 @@ export const AnalyzeVideoModal: React.FC<Props> = ({ onClose, onAnalysisComplete
                 <div className="space-y-2">
                   <i className="fa-solid fa-file-video text-emerald-400 text-3xl"></i>
                   <p className="font-bold text-white text-sm truncate">{selectedFile.name}</p>
-                  <p className="text-xs text-emerald-400 font-mono">
-                    {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Ready for analysis
+                  <p className="text-xs text-emerald-400">
+                    {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Ready for YOLO11 pipeline
                   </p>
                   <button
                     type="button"
@@ -187,7 +187,7 @@ export const AnalyzeVideoModal: React.FC<Props> = ({ onClose, onAnalysisComplete
 
           {/* Validation or Analysis Errors */}
           {(validationError || analysisError) && (
-            <div className="p-3 bg-red-950/80 border border-red-500/50 rounded-lg text-xs text-red-300 flex items-center gap-2 font-mono">
+            <div className="p-3 bg-red-950/80 border border-red-500/50 rounded-lg text-xs text-red-300 flex items-center gap-2">
               <i className="fa-solid fa-triangle-exclamation text-red-400"></i>
               <span>{validationError || analysisError}</span>
             </div>
@@ -202,7 +202,7 @@ export const AnalyzeVideoModal: React.FC<Props> = ({ onClose, onAnalysisComplete
                 value={cameraName}
                 onChange={(e) => setCameraName(e.target.value)}
                 disabled={isAnalyzing}
-                className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none text-sm"
+                className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none text-xs"
                 required
               />
             </div>
@@ -214,12 +214,12 @@ export const AnalyzeVideoModal: React.FC<Props> = ({ onClose, onAnalysisComplete
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 disabled={isAnalyzing}
-                className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none text-sm"
+                className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none text-xs"
                 required
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Latitude</label>
                 <input
@@ -228,7 +228,7 @@ export const AnalyzeVideoModal: React.FC<Props> = ({ onClose, onAnalysisComplete
                   value={lat}
                   onChange={(e) => setLat(parseFloat(e.target.value))}
                   disabled={isAnalyzing}
-                  className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none text-sm"
+                  className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none"
                   required
                 />
               </div>
@@ -240,7 +240,7 @@ export const AnalyzeVideoModal: React.FC<Props> = ({ onClose, onAnalysisComplete
                   value={lng}
                   onChange={(e) => setLng(parseFloat(e.target.value))}
                   disabled={isAnalyzing}
-                  className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none text-sm"
+                  className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none"
                   required
                 />
               </div>
@@ -249,8 +249,8 @@ export const AnalyzeVideoModal: React.FC<Props> = ({ onClose, onAnalysisComplete
 
           {/* Processing Progress Indicator */}
           {isAnalyzing && progress && (
-            <div className="p-4 bg-slate-800/80 border border-blue-500/30 rounded-lg space-y-2">
-              <div className="flex justify-between items-center text-xs font-mono">
+            <div className="p-4 bg-slate-950 border border-blue-500/30 rounded-lg space-y-2">
+              <div className="flex justify-between items-center text-xs">
                 <span className="text-blue-400 font-bold uppercase">{progress.message}</span>
                 <span className="text-slate-300 font-bold">{progress.progress}%</span>
               </div>
@@ -268,17 +268,17 @@ export const AnalyzeVideoModal: React.FC<Props> = ({ onClose, onAnalysisComplete
             <button
               type="submit"
               disabled={isAnalyzing || !selectedFile}
-              className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-lg shadow-blue-900/30"
+              className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 text-xs uppercase tracking-wider shadow-lg shadow-blue-900/30"
             >
               {isAnalyzing ? (
                 <>
                   <i className="fa-solid fa-spinner fa-spin"></i>
-                  Running YOLO11 Pipeline...
+                  Executing AI Pipeline...
                 </>
               ) : (
                 <>
                   <i className="fa-solid fa-play"></i>
-                  Start Analysis
+                  Start Video Analysis
                 </>
               )}
             </button>
@@ -286,7 +286,7 @@ export const AnalyzeVideoModal: React.FC<Props> = ({ onClose, onAnalysisComplete
               type="button"
               onClick={onClose}
               disabled={isAnalyzing}
-              className="px-6 py-3 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-800 text-white font-bold rounded-lg transition-colors text-sm border border-white/10"
+              className="px-6 py-3 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-900 text-slate-300 font-bold rounded-lg transition-colors text-xs uppercase tracking-wider border border-white/10"
             >
               Cancel
             </button>
