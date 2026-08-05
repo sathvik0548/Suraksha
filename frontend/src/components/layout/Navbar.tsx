@@ -5,9 +5,10 @@ interface Props {
   currentView: ViewType;
   onNavigate: (view: ViewType) => void;
   onQuickDispatch: () => void;
+  onLogout?: () => void;
 }
 
-export const Navbar: React.FC<Props> = ({ currentView, onNavigate, onQuickDispatch }) => {
+export const Navbar: React.FC<Props> = ({ currentView, onNavigate, onQuickDispatch, onLogout }) => {
   const [utcTime, setUtcTime] = useState('');
 
   useEffect(() => {
@@ -23,7 +24,7 @@ export const Navbar: React.FC<Props> = ({ currentView, onNavigate, onQuickDispat
   }, []);
 
   return (
-    <header className="h-16 border-b border-white/10 bg-black/80 backdrop-blur-md flex items-center justify-between px-4 lg:px-6 z-50 shrink-0 select-none">
+    <header className="h-16 border-b border-white/10 bg-black/80 backdrop-blur-md flex items-center justify-between px-4 lg:px-6 z-50 shrink-0 select-none font-sans">
       {/* Left: Brand & Telemetry Status */}
       <div className="flex items-center gap-4">
         <button
@@ -57,8 +58,8 @@ export const Navbar: React.FC<Props> = ({ currentView, onNavigate, onQuickDispat
         </div>
       </div>
 
-      {/* Middle: Fast Navigation Tabs */}
-      <nav className="hidden xl:flex items-center gap-1.5 bg-white/5 p-1.5 rounded-lg border border-white/10 text-[11px] uppercase tracking-wider font-semibold">
+      {/* Middle: Navigation Tabs */}
+      <nav className="hidden xl:flex items-center gap-1.5 bg-white/5 p-1.5 rounded-lg border border-white/10 text-[11px] uppercase tracking-wider font-semibold font-mono">
         <button
           onClick={() => onNavigate('command_center')}
           className={`px-3.5 py-1.5 rounded-md transition-all flex items-center gap-2 ${
@@ -78,7 +79,7 @@ export const Navbar: React.FC<Props> = ({ currentView, onNavigate, onQuickDispat
               : 'text-slate-300 hover:text-white hover:bg-white/10'
           }`}
         >
-          <i className="fa-solid fa-video text-xs"></i> Live 6-CCTV Grid
+          <i className="fa-solid fa-video text-xs"></i> Live CCTV Grid
         </button>
 
         <button
@@ -115,32 +116,36 @@ export const Navbar: React.FC<Props> = ({ currentView, onNavigate, onQuickDispat
         </button>
       </nav>
 
-      {/* Right: Clock & Dispatch CTA */}
-      <div className="flex items-center gap-3 lg:gap-5">
+      {/* Right: Clock, Quick Dispatch & Log Out */}
+      <div className="flex items-center gap-3 lg:gap-5 font-mono">
         {/* UTC Clock */}
         <div className="text-right hidden sm:block">
-          <div className="text-[9px] text-slate-400 font-mono uppercase tracking-widest flex items-center gap-1 justify-end">
+          <div className="text-[9px] text-slate-400 uppercase tracking-widest flex items-center gap-1 justify-end">
             <i className="fa-solid fa-clock text-[9px] text-blue-400"></i> Global Telemetry
           </div>
-          <div className="text-xs lg:text-sm font-mono font-bold text-white tracking-wide">{utcTime || '2026-08-03 | 11:25:04 UTC'}</div>
+          <div className="text-xs lg:text-sm font-bold text-white tracking-wide">{utcTime || '2026-08-05 | 11:25:04 UTC'}</div>
         </div>
 
-        {/* Quick Dispatch Emergency Button */}
+        {/* Quick Dispatch */}
         <button
           onClick={onQuickDispatch}
-          className="px-3.5 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg flex items-center gap-2 shadow-[0_0_20px_rgba(220,38,38,0.5)] transition-all active:scale-95 border border-red-500/50"
+          className="px-3.5 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg flex items-center gap-2 shadow-[0_0_20px_rgba(220,38,38,0.5)] transition-all active:scale-95 border border-red-500/50"
         >
           <span className="w-2 h-2 bg-white rounded-full animate-ping"></span>
           <i className="fa-solid fa-bullhorn text-xs"></i>
           <span>Quick Dispatch</span>
         </button>
 
-        {/* Operator Profile Badge */}
-        <div className="flex items-center gap-2 border-l border-white/10 pl-3">
-          <div className="w-9 h-9 rounded-lg border border-blue-500/50 bg-slate-900 flex items-center justify-center text-xs font-mono font-bold text-blue-400 shadow-inner">
-            <i className="fa-solid fa-user-shield text-xs"></i>
-          </div>
-        </div>
+        {/* Log Out Control */}
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="w-9 h-9 rounded-lg border border-red-500/40 bg-red-950/40 hover:bg-red-600 text-red-400 hover:text-white flex items-center justify-center text-xs font-bold transition-all shadow-md"
+            title="Log Out of System"
+          >
+            <i className="fa-solid fa-power-off text-xs"></i>
+          </button>
+        )}
       </div>
     </header>
   );

@@ -45,7 +45,7 @@ class ModelConfig:
     # Classes to detect
     detection_classes: List[str] = field(default_factory=lambda: [
         "person", "car", "bus", "truck", "motorcycle", 
-        "bicycle", "backpack", "suitcase", "handbag"
+        "bicycle", "knife", "scissors", "weapon", "backpack", "suitcase", "handbag", "fire"
     ])
 
 

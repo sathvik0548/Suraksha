@@ -144,6 +144,7 @@ const madanapalleUnits: PatrolUnit[] = [
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('landing');
   const [cameras, setCameras] = useState<CameraData[]>(dataService.getCameras());
   const [incidents, setIncidents] = useState<Incident[]>(madanapalleIncidents);
@@ -184,7 +185,6 @@ export default function App() {
       fetchBackendData();
     }
 
-    // Subscribe to DataService updates
     const unsubscribe = dataService.subscribe(() => {
       const cams = dataService.getCameras();
       if (cams && cams.length > 0) {
@@ -197,12 +197,19 @@ export default function App() {
 
   const handleLogin = () => {
     setIsAuthenticated(true);
+    setShowLoginModal(false);
     setCurrentView('command_center');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await safeFetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {
+      console.warn('Logout API response offline', e);
+    }
     authService.clearAuth();
     setIsAuthenticated(false);
+    setShowLoginModal(false);
     setCurrentView('landing');
   };
 
@@ -216,8 +223,31 @@ export default function App() {
     );
   };
 
-  // Show login page if not authenticated
-  if (!isAuthenticated) {
+  // Task 6: Render LandingPage full-bleed standalone when on landing view or not authenticated
+  if (currentView === 'landing' && !showLoginModal) {
+    return (
+      <LandingPage
+        onEnterSystem={() => {
+          if (isAuthenticated) {
+            setCurrentView('command_center');
+          } else {
+            setShowLoginModal(true);
+          }
+        }}
+        onNavigate={(view) => {
+          if (view === 'landing') return;
+          if (isAuthenticated) {
+            setCurrentView(view);
+          } else {
+            setShowLoginModal(true);
+          }
+        }}
+      />
+    );
+  }
+
+  // Show login modal if not authenticated
+  if (!isAuthenticated || showLoginModal) {
     return <LoginPage onLogin={handleLogin} />;
   }
 
@@ -281,13 +311,6 @@ export default function App() {
               <FleetUnitsView
                 units={units}
                 onDispatchUnit={() => setIsDispatchModalOpen(true)}
-              />
-            )}
-
-            {currentView === 'landing' && (
-              <LandingPage
-                onEnterSystem={() => setCurrentView('command_center')}
-                onNavigate={(view) => setCurrentView(view)}
               />
             )}
           </main>

@@ -22,7 +22,8 @@ export const InvestigationView: React.FC<Props> = ({
   onOpenPrintReport,
   onCloseIncident,
 }) => {
-  const activeIncident: Incident = incident || {
+  const [incidentsList, setIncidentsList] = useState<Incident[]>([]);
+  const [activeIncident, setActiveIncident] = useState<Incident>(incident || {
     id: 'INC-MDP-8812',
     title: 'VEHICLE ACCIDENT & IMPACT DETECTED',
     location: 'MITS College Junction - Sector 1, Madanapalle',
@@ -39,7 +40,7 @@ export const InvestigationView: React.FC<Props> = ({
       weapon: false, weaponConfidence: 0, fight: true, fightConfidence: 94,
       people: 3, blood: false, severity: 9.3, trackingIDs: [101, 102]
     }
-  };
+  });
 
   const [policeNotes, setPoliceNotes] = useState(activeIncident.policeNotes || '');
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -52,6 +53,32 @@ export const InvestigationView: React.FC<Props> = ({
   const [trackingFrames, setTrackingFrames] = useState<FrameTrackingData[]>([]);
   const [activeFrameBoxes, setActiveFrameBoxes] = useState<DetectionBox[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Update activeIncident when prop changes
+  useEffect(() => {
+    if (incident) {
+      setActiveIncident(incident);
+    }
+  }, [incident]);
+
+  // Fetch all incidents for browsing list
+  useEffect(() => {
+    const fetchIncidentsList = async () => {
+      try {
+        const res = await safeFetch('/api/v1/incidents/cards?limit=20');
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.incidents && data.incidents.length > 0) {
+            setIncidentsList(data.incidents);
+          }
+        }
+      } catch (e) {
+        console.warn('Backend incidents gallery fetch offline', e);
+      }
+    };
+
+    fetchIncidentsList();
+  }, []);
 
   const activeCamera: CameraData = camera || {
     id: activeIncident.cameraId || 'CAM-MDP-01',
@@ -76,13 +103,12 @@ export const InvestigationView: React.FC<Props> = ({
   const primaryVideoSource = activeCamera.videoUrl || '/assets/videos/accident/accident_001.mp4';
   const apiAnnotatedUrl = getApiUrl(`/api/v1/annotated-video?video_id=${activeIncident.id}`);
 
-  // Load backend details & time-indexed tracking frames
+  // Load details & tracking frames
   useEffect(() => {
     const fetchIncidentDetails = async () => {
       const vid = activeIncident.id;
       setUseFallbackStream(false);
 
-      // Fetch tracking array for timestamp syncing
       try {
         const trkRes = await safeFetch(`/api/v1/tracking/${vid}`);
         if (trkRes.ok) {
@@ -138,13 +164,12 @@ export const InvestigationView: React.FC<Props> = ({
     fetchIncidentDetails();
   }, [activeIncident.id]);
 
-  // Sync bounding boxes to video currentTime during playback & seeking
+  // Sync bounding boxes to video currentTime
   const handleTimeUpdate = () => {
     const video = videoRef.current;
     if (!video || trackingFrames.length === 0) return;
 
     const currentTime = video.currentTime;
-    // Find closest frame to currentTime
     let closestFrame = trackingFrames[0];
     let minDiff = Math.abs(currentTime - trackingFrames[0].timestamp);
 
@@ -182,31 +207,52 @@ export const InvestigationView: React.FC<Props> = ({
     <div className="flex-1 flex flex-col bg-slate-950 text-white overflow-hidden font-sans select-none">
       {/* Header */}
       <div className="px-6 py-4 bg-slate-900 border-b border-white/10 flex items-center justify-between font-mono">
-        <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <i className="fa-solid fa-microscope text-blue-400 text-sm"></i>
-            Forensic Workspace: {activeIncident.id}
-          </h2>
-          <p className="text-xs text-slate-400">{activeIncident.title} - {activeIncident.location}</p>
-        </div>
         <div className="flex items-center gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <i className="fa-solid fa-microscope text-blue-400 text-sm"></i>
+              Forensic Workspace: {activeIncident.id}
+            </h2>
+            <p className="text-xs text-slate-400">{activeIncident.title} - {activeIncident.location}</p>
+          </div>
+        </div>
+
+        {/* Incident Selector Dropdown / Actions */}
+        <div className="flex items-center gap-3">
+          {incidentsList.length > 0 && (
+            <select
+              value={activeIncident.id}
+              onChange={(e) => {
+                const found = incidentsList.find((i) => i.id === e.target.value);
+                if (found) setActiveIncident(found);
+              }}
+              className="bg-slate-950 border border-white/10 text-xs font-mono text-white rounded px-3 py-1.5 focus:border-blue-500 focus:outline-none"
+            >
+              {incidentsList.map((inc) => (
+                <option key={inc.id} value={inc.id}>
+                  #{inc.id} - {inc.title.slice(0, 30)} ({inc.severity.toFixed(1)})
+                </option>
+              ))}
+            </select>
+          )}
+
           <button
             onClick={handleDownloadEvidence}
             className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-bold uppercase transition-colors flex items-center gap-1.5"
           >
-            <i className="fa-solid fa-download"></i> Export Evidence JSON
+            <i className="fa-solid fa-download"></i> Export Evidence
           </button>
           <button
             onClick={onOpenPrintReport}
             className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold uppercase transition-colors flex items-center gap-1.5"
           >
-            <i className="fa-solid fa-print"></i> Generate Official Report
+            <i className="fa-solid fa-print"></i> Report
           </button>
           <button
             onClick={onCloseIncident}
             className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-bold uppercase transition-colors"
           >
-            Back to Grid
+            Grid
           </button>
         </div>
       </div>
@@ -263,7 +309,6 @@ export const InvestigationView: React.FC<Props> = ({
                     setUseFallbackStream(true);
                   }}
                 />
-                {/* Time-synced Bounding Box Overlay */}
                 <BoundingBoxOverlay
                   detections={displayedBoxes}
                   showTrackingId={true}

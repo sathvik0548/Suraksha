@@ -218,6 +218,14 @@ class DataService {
     this.notifyListeners();
   }
 
+  public updateCamera(updatedCam: CameraData) {
+    const idx = this.cameras.findIndex((c) => c.id === updatedCam.id);
+    if (idx !== -1) {
+      this.cameras[idx] = { ...this.cameras[idx], ...updatedCam };
+      this.notifyListeners();
+    }
+  }
+
   public refreshCameras() {
     this.loadCameras();
   }

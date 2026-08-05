@@ -275,6 +275,8 @@ class VideoDetector:
                 confidence = float(box.conf[0].cpu().numpy())
                 class_id = int(box.cls[0].cpu().numpy())
                 class_name = self.class_names[class_id]
+                if class_name.lower() in ["knife", "scissors"]:
+                    class_name = "weapon"
                 
                 # Filter by allowed classes
                 if class_name.lower() not in [c.lower() for c in config.model.detection_classes]:
